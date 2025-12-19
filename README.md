@@ -123,16 +123,4 @@ The hub provides a menu to run:
 2. `src/evaluation/stockfish_eval.py` is **experimental / unfinished** (path/import inconsistencies).
 3. `src/mcts/node.py` and `src/mcts/puct.py` are placeholders (unused by the active MCTS).
 
-If you want, I can generate another “fix zip” that cleans these up.
-
 ---
-
-## Repo hygiene (don’t push huge datasets)
-
-If you keep a large dataset folder in repo root (e.g. `./data/`) **do not commit it**.
-
-Suggested `.gitignore` pattern:
-```gitignore
-/data/
-!/src/data/
-```
