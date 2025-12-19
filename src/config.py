@@ -22,6 +22,14 @@ LATEST_MODEL_PATH = os.path.join(MODEL_DIR, "latest_model.pth")
 # RL replay buffer (self-play shards)
 RL_BUFFER_DIR = "E:/chronos/chronos_rl_buffer"
 os.makedirs(RL_BUFFER_DIR, exist_ok=True)
+os.makedirs(os.path.join(PROJECT_ROOT,'data'), exist_ok=True)
 
 #Engine
 ENGINE_PATH = os.path.join(PROJECT_ROOT, "engine", "stockfish.exe")
+
+# Discord webhook logging (set as environment variables; do NOT hardcode secrets)
+DISCORD_PROMOTION_WEBHOOK = os.environ.get('CHRONOS_PROMOTION_WEBHOOK', '')
+DISCORD_RATING_WEBHOOK = os.environ.get('CHRONOS_RATING_WEBHOOK', '')
+
+# Local rating cache file (kept in gitignored data/ by default)
+RATING_CACHE_PATH = os.path.join(PROJECT_ROOT, 'data', 'chronos_rating_last.json')
