@@ -6,7 +6,48 @@ from typing import Dict, Optional, List, Tuple
 import torch
 import chess
 import numpy as np
+from contextlib import nullcontext
 from src.nn.encoding import encode_board, move_to_index, MOVE_SPACE
+
+
+def _autocast(device: torch.device):
+    """Autocast context compatible with older/newer PyTorch."""
+    if device.type != "cuda":
+        return nullcontext()
+    # PyTorch 2.x prefers torch.amp.autocast
+    if hasattr(torch, "amp") and hasattr(torch.amp, "autocast"):
+        return torch.amp.autocast("cuda", enabled=True)
+    # Fallback for older versions
+    return torch.cuda.amp.autocast(enabled=True)
+
+
+def _visits_to_probs(visits: np.ndarray, temperature: float) -> np.ndarray:
+    """Convert visit counts to a probability distribution robustly.
+
+    Avoids overflow / NaNs when temperature is tiny (e.g. 1e-6).
+    """
+    v = np.asarray(visits, dtype=np.float64)
+    if v.size == 0:
+        return v.astype(np.float32)
+
+    # If all visits are zero, fall back to uniform.
+    if not np.isfinite(v).all() or np.max(v) <= 0:
+        return (np.ones_like(v) / len(v)).astype(np.float32)
+
+    # Deterministic when temperature is effectively 0
+    if temperature is None or temperature <= 1e-3:
+        p = np.zeros_like(v)
+        p[int(np.argmax(v))] = 1.0
+        return p.astype(np.float32)
+
+    # Stable softmax over log(visits)
+    logv = np.log(v + 1e-12) / float(temperature)
+    logv -= np.max(logv)
+    expv = np.exp(logv)
+    s = float(expv.sum())
+    if not np.isfinite(s) or s <= 0:
+        return (np.ones_like(v) / len(v)).astype(np.float32)
+    return (expv / s).astype(np.float32)
 
 
 # ===================== NODE =====================
@@ -29,7 +70,7 @@ class Node:
         return self.value_sum / self.visits if self.visits > 0 else 0.0
 
     def is_terminal(self) -> bool:
-        return self.board.is_game_over(claim_draw=True)
+        return self.board.is_game_over()
 
     def expand(self, policy_logits: torch.Tensor):
         if self.expanded or self.is_terminal():
@@ -85,6 +126,10 @@ class MCTS:
         # --- Random opening book ---
         self.opening_random_plies = (4, 6)  # inclusive range
 
+        # --- Internal ---
+        self.children = {}
+
+
 
     def run(
         self,
@@ -102,7 +147,7 @@ class MCTS:
         if add_noise and move_number < random.randint(*self.opening_random_plies):
             legal_moves = list(board.legal_moves)
             if not legal_moves:
-                return [], np.array([], dtype=np.float32)
+                return None, None
 
             move = random.choice(legal_moves)
             return [move], np.array([1.0], dtype=np.float32)
@@ -142,19 +187,23 @@ class MCTS:
             visits.append(child.visits)
 
         if not visits:
-            return [], np.array([], dtype=np.float32)
+            return None, None
 
         visits = np.array(visits, dtype=np.float32)
 
         # ================= TEMPERATURE =================
-        temperature = self.temp_initial if move_number < self.temp_moves else 1e-6
+        # After the exploratory phase we want deterministic play.
+        # IMPORTANT: do NOT use a tiny temperature like 1e-6 with power-law,
+        # it can overflow and produce NaNs.
+        temperature = self.temp_initial if move_number < self.temp_moves else 0.0
 
-        if temperature < 1e-6:
-            probs = np.zeros_like(visits)
-            probs[np.argmax(visits)] = 1.0
+        probs = _visits_to_probs(visits, temperature)
+
+        # Final safety net
+        if not np.isfinite(probs).all() or probs.sum() <= 0:
+            probs = np.ones_like(probs, dtype=np.float32) / len(probs)
         else:
-            visits = visits ** (1.0 / temperature)
-            probs = visits / np.sum(visits)
+            probs = (probs / probs.sum()).astype(np.float32)
 
         return moves, probs
 
@@ -168,7 +217,7 @@ class MCTS:
             device=self.device
         )
 
-        with torch.no_grad(), torch.cuda.amp.autocast(enabled=self.device.type == "cuda"):
+        with torch.no_grad(), _autocast(self.device):
             policy_logits, values = self.model(boards)
 
         for n, pl, v in zip(nodes, policy_logits, values):
@@ -180,7 +229,7 @@ class MCTS:
             encode_board(node.board), dtype=torch.float32
         ).unsqueeze(0).to(self.device)
 
-        with torch.no_grad(), torch.cuda.amp.autocast(enabled=self.device.type == "cuda"):
+        with torch.no_grad(), _autocast(self.device):
             policy_logits, value = self.model(board_tensor)
 
         value = float(value.item())
@@ -193,7 +242,7 @@ class MCTS:
         best_child = None
 
         for child in node.children.values():
-            q = -child.value
+            q = child.value
             u = (
                self.cpuct
                * child.prior
