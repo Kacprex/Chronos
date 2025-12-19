@@ -17,9 +17,9 @@ from src.nn.network import ChessNet
 # SETTINGS
 # ==========================
 
-BATCH_SIZE = 256
-EPOCHS = 1
-LR = 1e-4
+BATCH_SIZE = 512
+EPOCHS = 3
+LR = 2e-4
 WEIGHT_DECAY = 1e-4
 
 CHECKPOINT_PATH = "models/checkpoints/phase1_resume.pt"

@@ -9,7 +9,7 @@ AIVSAI = os.path.join(PROJECT_ROOT, "data","PGN", "ai_vs_ai_games.pgn")
 SFVSAI = os.path.join(PROJECT_ROOT, "data","PGN", "sf_vs_ai_games.pgn")
 
 # Where the processed shards will be stored (external disk!)
-SHARD_DIR = "E:/ai_chess_dataset"
+SHARD_DIR = "E:/chronos/SL_shards"
 
 # Where trained models are saved
 MODEL_DIR = os.path.join(PROJECT_ROOT, "models")
@@ -20,7 +20,7 @@ BEST_MODEL_PATH = os.path.join(MODEL_DIR, "best_model.pth")
 LATEST_MODEL_PATH = os.path.join(MODEL_DIR, "latest_model.pth")  
 
 # RL replay buffer (self-play shards)
-RL_BUFFER_DIR = "E:/ai_chess_rl_buffer"
+RL_BUFFER_DIR = "E:/chronos/chronos_rl_buffer"
 os.makedirs(RL_BUFFER_DIR, exist_ok=True)
 
 #Engine

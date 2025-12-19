@@ -21,7 +21,6 @@ from src.nn.network import ChessNet
 from src.nn.encoding import encode_board
 
 
-ENGINE_PATH = os.path.join(PROJECT_ROOT, "engine", "stockfish.exe")
 
 
 def fmt_time(ts: float) -> str:

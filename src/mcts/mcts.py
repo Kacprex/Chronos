@@ -29,7 +29,7 @@ class Node:
         return self.value_sum / self.visits if self.visits > 0 else 0.0
 
     def is_terminal(self) -> bool:
-        return self.board.is_game_over()
+        return self.board.is_game_over(claim_draw=True)
 
     def expand(self, policy_logits: torch.Tensor):
         if self.expanded or self.is_terminal():
@@ -85,10 +85,6 @@ class MCTS:
         # --- Random opening book ---
         self.opening_random_plies = (4, 6)  # inclusive range
 
-        # --- Internal ---
-        self.children = {}
-
-
 
     def run(
         self,
@@ -106,7 +102,7 @@ class MCTS:
         if add_noise and move_number < random.randint(*self.opening_random_plies):
             legal_moves = list(board.legal_moves)
             if not legal_moves:
-                return None, None
+                return [], np.array([], dtype=np.float32)
 
             move = random.choice(legal_moves)
             return [move], np.array([1.0], dtype=np.float32)
@@ -146,7 +142,7 @@ class MCTS:
             visits.append(child.visits)
 
         if not visits:
-            return None, None
+            return [], np.array([], dtype=np.float32)
 
         visits = np.array(visits, dtype=np.float32)
 
@@ -197,7 +193,7 @@ class MCTS:
         best_child = None
 
         for child in node.children.values():
-            q = child.value
+            q = -child.value
             u = (
                self.cpuct
                * child.prior

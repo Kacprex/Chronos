@@ -7,7 +7,7 @@ venv/
 .env/
 
 # --- ML / AI ---
-data/
+/data/
 datasets/
 models/
 checkpoints/
@@ -16,7 +16,7 @@ checkpoints/
 *.h5
 *.onnx
 *.npy
-
+!/src/data/
 # --- Chess / engines ---
 rust_pgn/
 engine/

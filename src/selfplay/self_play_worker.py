@@ -13,6 +13,7 @@ from src.config import BEST_MODEL_PATH, RL_BUFFER_DIR
 from src.nn.network import ChessNet
 from src.nn.encoding import encode_board, move_to_index, MOVE_SPACE
 from src.mcts.mcts import MCTS
+from src.selfplay.opening_book import play_random_opening
 
 
 def fmt_time(ts: float) -> str:
@@ -32,6 +33,7 @@ def play_single_game(
     device,
     simulations: int,
     temperature_moves: int = 10,
+    max_moves: int = 512,
 ):
     """
     Plays a single self-play game and returns training samples:
@@ -45,35 +47,32 @@ def play_single_game(
     import chess
     import random
     from src.mcts.mcts import MCTS
+    from src.selfplay.opening_book import play_random_opening
     from src.nn.encoding import encode_board
 
     board = chess.Board()
     history = []  # (board_tensor, policy, was_white_turn)
 
-    move_count = 0
+    # Play a short random opening line from a small curated book to improve early-game diversity.
+    # We do NOT record training samples for these forced opening plies (they are not MCTS-derived policies).
+    play_random_opening(board, max_plies=6)
 
-    while not board.is_game_over():
+    move_count = board.ply()
+
+    # Reuse a single MCTS instance per game (no tree reuse; run() builds a fresh root each call)
+    mcts = MCTS(
+        model=model,
+        device=device,
+        simulations=simulations,
+        add_dirichlet_noise=True,
+    )
+
+    while not board.is_game_over(claim_draw=True) and move_count < max_moves:
         move_count += 1
 
-        # Create fresh MCTS EACH MOVE (safe, no tree pollution)
-        mcts = MCTS(
-            model=model,
-            device=device,
-            simulations=simulations,
-            add_dirichlet_noise=True,
-        )
-
-        # Temperature handling
-        if move_count <= temperature_moves:
-            temperature = 1.25
-        else:
-            temperature = 0.1
-
-        root, result = mcts.run(board, move_count)
-        if result is None:
+        moves, probs = mcts.run(board, move_count)
+        if not moves:
             break
-        
-        moves, probs = result
 
 
         move = np.random.choice(moves, p=probs)
@@ -94,7 +93,7 @@ def play_single_game(
 
 
     # Game result
-    result = board.result()
+    result = board.result(claim_draw=True)
     if result == "1-0":
         z_white = 1.0
     elif result == "0-1":
@@ -111,7 +110,7 @@ def play_single_game(
 
 
 
-def self_play(num_games: int = 50, simulations: int = 200, shard_size: int = 50_000):
+def self_play(num_games: int = 50, simulations: int = 200, shard_size: int = 10_000):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     log(f"Self-play using device: {device}")
 

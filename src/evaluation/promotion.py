@@ -7,13 +7,11 @@ from datetime import datetime
 
 import torch
 import chess
+import numpy as np
 
 from src.config import BEST_MODEL_PATH, LATEST_MODEL_PATH
 from src.nn.network import ChessNet
 from src.mcts.mcts import MCTS
-from src.nn.encoding import encode_board
-
-
 def log(msg: str):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"[{now}] {msg}")
@@ -33,19 +31,15 @@ def play_game(model_white, model_black, device, simulations=200, temp_moves=0, m
         else:
             mcts = mcts_black
 
-        root, pi = mcts.run(board, add_noise=(move_count < temp_moves))
-        move_idx = int(torch.tensor(pi).argmax().item())
-        legal_moves = list(board.legal_moves)
+        moves, probs = mcts.run(board, move_number=move_count, add_noise=(move_count < temp_moves))
+        if not moves:
+            break
 
-        from src.nn.encoding import move_to_index
-        chosen_move = None
-        for mv in legal_moves:
-            idx = move_to_index(mv)
-            if idx == move_idx:
-                chosen_move = mv
-                break
-        if chosen_move is None:
-            chosen_move = legal_moves[0]
+        # Early moves can be stochastic (if temp_moves > 0); later moves deterministic.
+        if move_count < temp_moves:
+            chosen_move = np.random.choice(moves, p=probs)
+        else:
+            chosen_move = moves[int(np.argmax(probs))]
 
         board.push(chosen_move)
         move_count += 1
