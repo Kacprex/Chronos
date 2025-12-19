@@ -1,199 +1,255 @@
-import sys, os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-
 import os
 import time
-from datetime import datetime
-from typing import List, Tuple
 import random
+from datetime import datetime
+from typing import List, Tuple, Optional
+
+import numpy as np
 import torch
 import chess
-import numpy as np
-from src.config import BEST_MODEL_PATH, RL_BUFFER_DIR
+
+from src.config import BEST_MODEL_PATH, PHASE1_MODEL_PATH, RL_BUFFER_DIR
 from src.nn.network import ChessNet
 from src.nn.encoding import encode_board, move_to_index, MOVE_SPACE
 from src.mcts.mcts import MCTS
-from src.selfplay.opening_book import play_random_opening
 
 
-def fmt_time(ts: float) -> str:
-    h = int(ts // 3600)
-    m = int((ts % 3600) // 60)
-    s = int(ts % 60)
-    return f"{h:d}:{m:02d}:{s:02d}"
-
-
-def log(msg: str):
+def _log(msg: str) -> None:
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"[{now}] {msg}")
 
 
+def _fmt_time(seconds: float) -> str:
+    seconds = max(0.0, float(seconds))
+    h = int(seconds // 3600)
+    m = int((seconds % 3600) // 60)
+    s = int(seconds % 60)
+    return f"{h:d}:{m:02d}:{s:02d}"
+
+
+def _safe_move_to_index(board: chess.Board, move: chess.Move) -> Optional[int]:
+    """Supports both signatures move_to_index(move) and move_to_index(move, board)."""
+    try:
+        return move_to_index(move)  # type: ignore
+    except TypeError:
+        try:
+            return move_to_index(move, board)  # type: ignore
+        except Exception:
+            return None
+    except Exception:
+        return None
+
+
+def _apply_temperature(probs: np.ndarray, temperature: float) -> np.ndarray:
+    """AlphaZero-style temperature on a probability vector."""
+    temperature = float(temperature)
+    if temperature <= 0.0:
+        out = np.zeros_like(probs)
+        out[int(np.argmax(probs))] = 1.0
+        return out
+
+    # Sharpen / flatten
+    p = np.clip(probs, 1e-12, 1.0) ** (1.0 / temperature)
+    p = p / np.sum(p)
+    return p
+
+
+def _load_model(device: torch.device) -> ChessNet:
+    model = ChessNet().to(device)
+
+    # Prefer BEST_MODEL_PATH, fall back to PHASE1_MODEL_PATH (SL final)
+    if os.path.exists(BEST_MODEL_PATH):
+        ckpt = torch.load(BEST_MODEL_PATH, map_location=device)
+        model.load_state_dict(ckpt)
+        _log(f"Loaded BEST model: {BEST_MODEL_PATH}")
+    elif os.path.exists(PHASE1_MODEL_PATH):
+        ckpt = torch.load(PHASE1_MODEL_PATH, map_location=device)
+        model.load_state_dict(ckpt)
+        _log(f"Loaded SL model (PHASE1): {PHASE1_MODEL_PATH}")
+    else:
+        _log("WARNING: No model checkpoint found. Using randomly initialized weights.")
+
+    model.eval()
+    return model
+
+
 def play_single_game(
-    model,
-    device,
-    simulations: int,
+    model: ChessNet,
+    device: torch.device,
+    simulations: int = 200,
     temperature_moves: int = 10,
     max_moves: int = 512,
-):
+) -> List[Tuple[torch.Tensor, torch.Tensor, float]]:
     """
-    Plays a single self-play game and returns training samples:
-    (board_tensor, policy, value)
+    Run one self-play game (MCTS guided) and return training samples:
 
-    - Uses temperature > 1.0 for first N moves
-    - Applies Dirichlet noise at root
-    - Correctly assigns value targets
+        (board_tensor, policy_target, value_target)
+
+    - board_tensor: (18, 8, 8) float32
+    - policy_target: (MOVE_SPACE,) float32 probabilities from MCTS visits
+    - value_target: float in [-1, 1], from the perspective of the side-to-move at that position
+
+    Notes:
+    - Temperature > 1.0 early to increase exploration, then low temperature later.
+    - MCTS adds Dirichlet noise at root when add_noise=True.
     """
-
-    import chess
-    import random
-    from src.mcts.mcts import MCTS
-    from src.selfplay.opening_book import play_random_opening
-    from src.nn.encoding import encode_board
-
     board = chess.Board()
-    history = []  # (board_tensor, policy, was_white_turn)
 
-    # Play a short random opening line from a small curated book to improve early-game diversity.
-    # We do NOT record training samples for these forced opening plies (they are not MCTS-derived policies).
-    play_random_opening(board, max_plies=6)
+    # store per-position samples before pushing the selected move:
+    # (board_tensor, policy_vec, was_white_turn)
+    history: List[Tuple[torch.Tensor, torch.Tensor, bool]] = []
 
-    move_count = board.ply()
-
-    # Reuse a single MCTS instance per game (no tree reuse; run() builds a fresh root each call)
-    mcts = MCTS(
-        model=model,
-        device=device,
-        simulations=simulations,
-        add_dirichlet_noise=True,
-    )
-
-    while not board.is_game_over(claim_draw=True) and move_count < max_moves:
-        move_count += 1
-
-        moves, probs = mcts.run(board, move_count)
-        if not moves:
+    for ply in range(1, max_moves + 1):
+        if board.is_game_over(claim_draw=True):
             break
 
+        # Temperature schedule
+        temperature = 1.25 if ply <= temperature_moves else 0.10
 
-        move = np.random.choice(moves, p=probs)
+        # Fresh MCTS each move (simple + safe)
+        mcts = MCTS(
+            model=model,
+            device=device,
+            simulations=simulations,
+            cpuct=1.5,
+            add_dirichlet_noise=True,
+        )
 
+        moves, probs = mcts.run(board, move_number=ply, add_noise=True)
+        if not moves or probs is None or len(moves) != len(probs):
+            break
 
-        # store BEFORE move
-        board_tensor = torch.from_numpy(encode_board(board))
-        pi = np.zeros(MOVE_SPACE, dtype=np.float32)
-        for m, p in zip(moves, probs):
-            idx = move_to_index(m)
-            if idx is not None:
-                pi[idx] = p
-        
-        history.append((board_tensor, pi, board.turn))
-        
+        probs = _apply_temperature(probs.astype(np.float64), temperature)
 
-        board.push(move)
+        # Build dense policy target over MOVE_SPACE indices
+        policy_vec = torch.zeros(MOVE_SPACE, dtype=torch.float32)
+        mass = 0.0
+        for mv, p in zip(moves, probs):
+            idx = _safe_move_to_index(board, mv)
+            if idx is None:
+                continue
+            policy_vec[idx] += float(p)
+            mass += float(p)
 
+        # If some moves were un-encodable, renormalize what remains
+        if mass > 1e-8:
+            policy_vec /= float(policy_vec.sum())
 
-    # Game result
-    result = board.result(claim_draw=True)
-    if result == "1-0":
+        board_tensor = torch.from_numpy(encode_board(board)).float()
+        history.append((board_tensor, policy_vec, board.turn == chess.WHITE))
+
+        # Sample the move according to probs (after temperature)
+        choice = int(np.random.choice(len(moves), p=probs))
+        board.push(moves[choice])
+
+    # Game outcome from WHITE perspective
+    res = board.result(claim_draw=True)
+    if res == "1-0":
         z_white = 1.0
-    elif result == "0-1":
+    elif res == "0-1":
         z_white = -1.0
     else:
         z_white = 0.0
 
-    samples = []
-    for board_tensor, policy, was_white_turn in history:
+    # Convert to side-to-move perspective per stored position
+    out: List[Tuple[torch.Tensor, torch.Tensor, float]] = []
+    for bt, pi, was_white_turn in history:
         z = z_white if was_white_turn else -z_white
-        samples.append((board_tensor, policy, z))
+        out.append((bt, pi, float(z)))
 
-    return samples
+    return out
 
 
+def _next_shard_id() -> int:
+    os.makedirs(RL_BUFFER_DIR, exist_ok=True)
+    existing = [f for f in os.listdir(RL_BUFFER_DIR) if f.startswith("rl_shard_") and f.endswith(".pt")]
+    if not existing:
+        return 1
+    existing.sort()
+    last = existing[-1]
+    try:
+        return int(last.split("_")[-1].split(".")[0]) + 1
+    except Exception:
+        return 1
 
-def self_play(num_games: int = 50, simulations: int = 200, shard_size: int = 10_000):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    log(f"Self-play using device: {device}")
 
+def _save_rl_shard(shard_id: int, boards: List[torch.Tensor], policies: List[torch.Tensor], values: List[torch.Tensor]) -> None:
+    path = os.path.join(RL_BUFFER_DIR, f"rl_shard_{shard_id:06d}.pt")
     os.makedirs(RL_BUFFER_DIR, exist_ok=True)
 
-    model = ChessNet().to(device)
-    model.load_state_dict(torch.load(BEST_MODEL_PATH, map_location=device))
-    model.eval()
+    torch.save(
+        {
+            "boards": torch.stack(boards),      # (N, 18, 8, 8)
+            "policies": torch.stack(policies),  # (N, MOVE_SPACE)
+            "values": torch.stack(values),      # (N, 1)
+        },
+        path,
+    )
+    _log(f"Saved RL shard {shard_id} → {path} (N={len(boards)})")
 
-    # find next shard id
-    existing = [f for f in os.listdir(RL_BUFFER_DIR) if f.startswith("rl_shard_") and f.endswith(".pt")]
-    if existing:
-        existing.sort()
-        last = existing[-1]
-        shard_id = int(last.split("_")[-1].split(".")[0]) + 1
-    else:
-        shard_id = 1
 
-    boards_list: List[torch.Tensor] = []
-    policies_list: List[torch.Tensor] = []
-    values_list: List[torch.Tensor] = []
+def self_play(
+    num_games: int = 50,
+    simulations: int = 200,
+    shard_size: int = 10_000,
+    temperature_moves: int = 10,
+    max_moves: int = 512,
+) -> None:
+    """
+    Generate self-play data and write RL shards to RL_BUFFER_DIR.
+
+    Each shard contains:
+      - boards:   (N, 18, 8, 8)
+      - policies: (N, MOVE_SPACE)  (MCTS visit distribution)
+      - values:   (N, 1)           (terminal outcome, side-to-move perspective)
+    """
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    _log(f"Self-play device: {device}")
+    model = _load_model(device)
+
+    shard_id = _next_shard_id()
+
+    boards: List[torch.Tensor] = []
+    policies: List[torch.Tensor] = []
+    values: List[torch.Tensor] = []
 
     total_positions = 0
-    start_time = time.time()
+    t0 = time.time()
+
     for g in range(1, num_games + 1):
-        game_start = time.time()
         samples = play_single_game(
             model=model,
             device=device,
-            simulations=simulations
+            simulations=simulations,
+            temperature_moves=temperature_moves,
+            max_moves=max_moves,
         )
 
-
-        game_time = time.time() - game_start
-
-        for b, pi, z in samples:
-            boards_list.append(b)
-            policies_list.append(torch.tensor(pi, dtype=torch.float32))
-            values_list.append(torch.tensor([z], dtype=torch.float32))
+        for bt, pi, z in samples:
+            boards.append(bt)
+            policies.append(pi)
+            values.append(torch.tensor([z], dtype=torch.float32))
             total_positions += 1
 
-        log(f"Game {g}/{num_games} finished: positions={len(samples)}, "
-            f"total_positions={total_positions}, time={fmt_time(game_time)}")
+            if len(boards) >= shard_size:
+                _save_rl_shard(shard_id, boards, policies, values)
+                shard_id += 1
+                boards.clear()
+                policies.clear()
+                values.clear()
 
-        if len(boards_list) >= shard_size:
-            shard_path = os.path.join(RL_BUFFER_DIR, f"rl_shard_{shard_id:06d}.pt")
-            log(f"Saving RL shard {shard_id} → {shard_path} "
-                f"(positions={len(boards_list)}, total={total_positions})")
-            torch.save({
-                "boards": torch.stack(boards_list),
-                "policies": torch.stack(policies_list),
-                "values": torch.stack(values_list),
-            }, shard_path)
+        if g % max(1, num_games // 10) == 0 or g == num_games:
+            elapsed = time.time() - t0
+            pps = total_positions / elapsed if elapsed > 0 else 0.0
+            _log(f"Games {g}/{num_games} | positions={total_positions} | {pps:.1f} pos/s | elapsed={_fmt_time(elapsed)}")
 
-            boards_list.clear()
-            policies_list.clear()
-            values_list.clear()
-            shard_id += 1
+    if boards:
+        _save_rl_shard(shard_id, boards, policies, values)
 
-        # periodic ETA logging
-        elapsed = time.time() - start_time
-        games_per_sec = g / elapsed if elapsed > 0 else 0
-        games_left = num_games - g
-        eta = games_left / games_per_sec if games_per_sec > 0 else 0
-
-        log(f"Progress: {g}/{num_games} games "
-            f"({g/num_games:.2%}), elapsed={fmt_time(elapsed)}, ETA≈{fmt_time(eta)}")
-
-    # final shard
-    if boards_list:
-        shard_path = os.path.join(RL_BUFFER_DIR, f"rl_shard_{shard_id:06d}.pt")
-        log(f"Saving final RL shard {shard_id} → {shard_path} "
-            f"(positions={len(boards_list)}, total={total_positions})")
-        torch.save({
-            "boards": torch.stack(boards_list),
-            "policies": torch.stack(policies_list),
-            "values": torch.stack(values_list),
-        }, shard_path)
-
-    total_time = time.time() - start_time
-    log(f"✔ Self-play complete: games={num_games}, positions={total_positions}, time={fmt_time(total_time)}")
+    elapsed = time.time() - t0
+    _log(f"Self-play complete. Games={num_games}, positions={total_positions}, time={_fmt_time(elapsed)}")
 
 
 if __name__ == "__main__":
-    # Example: generate 100 games, 200 sims each
-    self_play(num_games=100, simulations=200)
+    # sensible defaults for quick testing
+    self_play(num_games=10, simulations=200, shard_size=10_000)
