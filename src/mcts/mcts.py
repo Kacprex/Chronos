@@ -1,6 +1,5 @@
 import math
 import random
-import os
 from dataclasses import dataclass, field
 from typing import Dict, Optional, List, Tuple
 
@@ -206,18 +205,12 @@ class MCTS:
             # -------- Batched NN evaluation --------
             if to_eval_map:
                 unique_leaves = list(to_eval_map.values())
-                logits_b, values_b = self._infer_batch(unique_leaves)
-                # Expand unique leaves and store value per node-id
-                val_by_id: dict[int, float] = {}
-                for leaf, logits, v in zip(unique_leaves, logits_b, values_b):
-                    # Expand once; (noise is root-only)
-                    if not leaf.expanded:
-                        leaf.expand(logits)
-                    val_by_id[id(leaf)] = float(v)
+                # _infer_batch() expands nodes (policy) and returns a dict mapping id(node)->value.
+                val_by_id = self._infer_batch(unique_leaves)
 
                 for i, leaf in enumerate(leaves):
                     if not leaf.is_terminal():
-                        values[i] = val_by_id[id(leaf)]
+                        values[i] = float(val_by_id[id(leaf)])
 
             # -------- Backprop --------
             for i in range(bsz):
@@ -317,13 +310,16 @@ class MCTS:
             self._backpropagate(n, val_by_id[id(n)])
 
     def _expand(self, node: Node) -> float:
-        """Expand a single node.
+        board_tensor = torch.tensor(
+            encode_board(node.board), dtype=torch.float32
+        ).unsqueeze(0).to(self.device)
 
-        IMPORTANT: when using BatchedInferenceClient, workers will not have a local
-        model and must route evaluations through the inference server.
-        """
-        val_by_id = self._infer_batch([node])
-        return val_by_id[id(node)]
+        with torch.no_grad(), _autocast(self.device):
+            policy_logits, value = self.model(board_tensor)
+
+        value = float(value.item())
+        node.expand(policy_logits[0].cpu())
+        return value
 
     def _select(self, node: Node) -> Node:
         total_visits = sum((c.visits + c.virtual_visits) for c in node.children.values()) + 1

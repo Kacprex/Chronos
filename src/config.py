@@ -22,12 +22,29 @@ LATEST_MODEL_PATH = os.path.join(MODEL_DIR, "latest_model.pth")
 # RL replay buffer (self-play shards)
 RL_BUFFER_DIR = "E:/chronos/chronos_rl_buffer"
 os.makedirs(RL_BUFFER_DIR, exist_ok=True)
+os.makedirs(os.path.join(PROJECT_ROOT,'data'), exist_ok=True)
 
 #Engine
 ENGINE_PATH = os.path.join(PROJECT_ROOT, "engine", "stockfish.exe")
 
-# ============ Optional integrations ============
-# Discord webhooks are OPTIONAL. Leave empty to disable.
-# Recommended: set these as environment variables (Windows: setx ...)
-DISCORD_PROMOTION_WEBHOOK = "https://discordapp.com/api/webhooks/1451707424774951062/Znmhl1S1bisNCkqAkZhicP9U0pmQu_bVSDKvahGDG7eCuQzb87EkaYLW_L0eLAW4y6pP"
-DISCORD_RANKING_WEBHOOK = "https://discordapp.com/api/webhooks/1451707358396022845/U4UeMWIfbVfHrmXnjbwWpx5CJQC_AEErbuuwHmAmmMQAJz8MK5LX846kicCj9VIH8F5Z"
+# Discord webhook logging (set as environment variables; do NOT hardcode secrets)
+# Optional: Discord webhooks for logging ratings/promotions.
+# Recommended: set as environment variables (don't hardcode secrets).
+#
+# Supported env var names:
+# - CHRONOS_PROMOTION_WEBHOOK
+# - CHRONOS_RANKING_WEBHOOK  (new name)
+# - CHRONOS_RATING_WEBHOOK   (legacy name)
+DISCORD_PROMOTION_WEBHOOK = os.environ.get('CHRONOS_PROMOTION_WEBHOOK', '').strip()
+
+# "ranking" vs "rating" naming has drifted across versions; keep both for compatibility.
+DISCORD_RANKING_WEBHOOK = os.environ.get('CHRONOS_RANKING_WEBHOOK', '').strip()
+DISCORD_RATING_WEBHOOK = os.environ.get('CHRONOS_RATING_WEBHOOK', '').strip()
+
+if not DISCORD_RANKING_WEBHOOK and DISCORD_RATING_WEBHOOK:
+    DISCORD_RANKING_WEBHOOK = DISCORD_RATING_WEBHOOK
+if not DISCORD_RATING_WEBHOOK and DISCORD_RANKING_WEBHOOK:
+    DISCORD_RATING_WEBHOOK = DISCORD_RANKING_WEBHOOK
+
+# Local rating cache file (kept in gitignored data/ by default)
+RATING_CACHE_PATH = os.path.join(PROJECT_ROOT, 'data', 'chronos_rating_last.json')

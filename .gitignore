@@ -30,5 +30,4 @@ logs/
 Thumbs.db
 
 #--- ZIP ---
-make_latest_zip.py
-latest.zip
+zip/

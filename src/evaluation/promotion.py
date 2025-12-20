@@ -82,12 +82,18 @@ def evaluate_and_promote(
       - CHRONOS_PROMOTION_WEBHOOK for every promotion run
       - CHRONOS_RATING_WEBHOOK only when promoted (Stockfish-based rating estimate)
     """
-    from src.config import (
-        DISCORD_PROMOTION_WEBHOOK,
-        DISCORD_RATING_WEBHOOK,
-        RATING_CACHE_PATH,
-        ENGINE_PATH,
+    # Import config as a module so we can gracefully handle older/newer
+    # variable names without hard-failing on ImportError.
+    import src.config as cfg
+
+    DISCORD_PROMOTION_WEBHOOK = getattr(cfg, "DISCORD_PROMOTION_WEBHOOK", "")
+    # Backward/forward compatibility: some versions used "RATING", others "RANKING".
+    DISCORD_RATING_WEBHOOK = (
+        getattr(cfg, "DISCORD_RATING_WEBHOOK", "")
+        or getattr(cfg, "DISCORD_RANKING_WEBHOOK", "")
     )
+    RATING_CACHE_PATH = getattr(cfg, "RATING_CACHE_PATH", "")
+    ENGINE_PATH = getattr(cfg, "ENGINE_PATH", "")
     from src.logging.discord_webhooks import send_promotion_embed, send_rating_embed
     from src.evaluation.chronos_rating import estimate_chronos_rating_vs_stockfish
 
