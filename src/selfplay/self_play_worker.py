@@ -300,7 +300,14 @@ def self_play(
 
     if workers == 1 or device.type != "cuda":
         # Single-process path (or CPU-only path): load model locally and run sequentially.
-        model = torch.load(model_path, map_location=device)
+        from src.nn.network import ChessNet
+        ckpt = torch.load(model_path, map_location="cpu")
+        # Support either raw state_dict or a wrapped dict.
+        if isinstance(ckpt, dict) and "state_dict" in ckpt and isinstance(ckpt["state_dict"], dict):
+            ckpt = ckpt["state_dict"]
+        model = ChessNet()
+        model.load_state_dict(ckpt)
+        model.to(device)
         model.eval()
 
         games_done = 0

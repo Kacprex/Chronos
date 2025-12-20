@@ -28,4 +28,7 @@ logs/
 # --- OS ---
 .DS_Store
 Thumbs.db
-config_secret.py
+
+#--- ZIP ---
+make_latest_zip.py
+latest.zip

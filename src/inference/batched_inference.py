@@ -6,7 +6,7 @@ import queue
 import numpy as np
 import multiprocessing as mp
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Sequence, Any
 
 import torch
 
@@ -34,16 +34,25 @@ class BatchedInferenceServer(mp.Process):
         model_path: str,
         device: str,
         request_q: mp.Queue,
-        response_qs: List[mp.Queue],
+        response_qs: Optional[Sequence[mp.Queue]] = None,
+        # Backwards-compatible aliases (older code may pass different kwarg names)
+        response_q_list: Optional[Sequence[mp.Queue]] = None,
+        response_queues: Optional[Sequence[mp.Queue]] = None,
         max_batch: int = 64,
         max_wait_ms: int = 2,
         use_amp: bool = True,
+        **_: Any,
     ):
         super().__init__(daemon=True)
         self.model_path = model_path
         self.device = device
         self.request_q = request_q
-        self.response_qs = response_qs
+        # Accept any of the supported names
+        rq = response_qs if response_qs is not None else response_q_list
+        rq = rq if rq is not None else response_queues
+        if rq is None:
+            raise ValueError("BatchedInferenceServer: response queues were not provided")
+        self.response_qs = list(rq)
         self.max_batch = int(max_batch)
         self.max_wait_ms = int(max_wait_ms)
         self.use_amp = bool(use_amp)
@@ -51,8 +60,19 @@ class BatchedInferenceServer(mp.Process):
     def run(self) -> None:
         torch.set_num_threads(1)
 
+        from src.nn.network import ChessNet
+
         device = torch.device(self.device)
-        model = torch.load(self.model_path, map_location=device)
+
+        # Checkpoints are saved as state_dict (OrderedDict). Instantiate the model first.
+        ckpt = torch.load(self.model_path, map_location="cpu")
+        if isinstance(ckpt, dict) and "state_dict" in ckpt:
+            ckpt = ckpt["state_dict"]
+        elif isinstance(ckpt, dict) and "model_state_dict" in ckpt:
+            ckpt = ckpt["model_state_dict"]
+
+        model = ChessNet().to(device)
+        model.load_state_dict(ckpt, strict=True)
         model.eval()
 
         if device.type == "cuda":

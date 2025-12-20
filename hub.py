@@ -189,6 +189,8 @@ def run_rl_loop():
     games_per_iter = _read_int("Self-play games per iteration", 50)
     simulations = _read_int("MCTS simulations per move (self-play)", 200)
     shard_size = _read_int("RL shard size (positions)", 10_000)
+    self_play_workers = _read_int("Self-play workers (processes)", 1)
+    mcts_batch_size = _read_int("MCTS inference batch size", 32)
 
     do_promo = input("Run promotion after each iteration? [Y/n]: ").strip().lower()
     do_promo = (do_promo != "n")
@@ -201,11 +203,13 @@ def run_rl_loop():
 
     for it in range(1, iterations + 1):
         log(f"--- Iteration {it}/{iterations}: self-play ---")
-        workers=self_play_workers,
-        mcts_batch_size=mcts_batch_size,
-        infer_max_batch=infer_max_batch,
-        infer_wait_ms=infer_wait_ms,
-        self_play(num_games=games_per_iter, simulations=simulations, shard_size=shard_size)
+        self_play(
+            num_games=games_per_iter,
+            simulations=simulations,
+            shard_size=shard_size,
+            workers=self_play_workers,
+            mcts_batch_size=mcts_batch_size,
+        )
 
         log(f"--- Iteration {it}/{iterations}: train_rl ---")
         train_rl()
@@ -239,14 +243,30 @@ def main_menu():
             games = _read_int("Self-play games", 50)
             sims = _read_int("Simulations", 200)
             shard_size = _read_int("RL shard size (positions)", 10_000)
-            self_play(num_games=games, simulations=sims, shard_size=shard_size)
+            workers = _read_int("Self-play workers (processes)", 1)
+            mcts_batch = _read_int("MCTS inference batch size", 32)
+            self_play(
+                num_games=games,
+                simulations=sims,
+                shard_size=shard_size,
+                workers=workers,
+                mcts_batch_size=mcts_batch,
+            )
             train_rl()
 
         elif choice == "2":
             games = _read_int("Self-play games", 50)
             sims = _read_int("Simulations", 200)
             shard_size = _read_int("RL shard size (positions)", 10_000)
-            self_play(num_games=games, simulations=sims, shard_size=shard_size)
+            workers = _read_int("Self-play workers (processes)", 1)
+            mcts_batch = _read_int("MCTS inference batch size", 32)
+            self_play(
+                num_games=games,
+                simulations=sims,
+                shard_size=shard_size,
+                workers=workers,
+                mcts_batch_size=mcts_batch,
+            )
 
         elif choice == "3":
             sims = _read_int("Simulations", 200)

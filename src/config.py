@@ -25,3 +25,9 @@ os.makedirs(RL_BUFFER_DIR, exist_ok=True)
 
 #Engine
 ENGINE_PATH = os.path.join(PROJECT_ROOT, "engine", "stockfish.exe")
+
+# ============ Optional integrations ============
+# Discord webhooks are OPTIONAL. Leave empty to disable.
+# Recommended: set these as environment variables (Windows: setx ...)
+DISCORD_PROMOTION_WEBHOOK = "https://discordapp.com/api/webhooks/1451707424774951062/Znmhl1S1bisNCkqAkZhicP9U0pmQu_bVSDKvahGDG7eCuQzb87EkaYLW_L0eLAW4y6pP"
+DISCORD_RANKING_WEBHOOK = "https://discordapp.com/api/webhooks/1451707358396022845/U4UeMWIfbVfHrmXnjbwWpx5CJQC_AEErbuuwHmAmmMQAJz8MK5LX846kicCj9VIH8F5Z"

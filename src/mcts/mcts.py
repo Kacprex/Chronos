@@ -1,5 +1,6 @@
 import math
 import random
+import os
 from dataclasses import dataclass, field
 from typing import Dict, Optional, List, Tuple
 
@@ -316,16 +317,13 @@ class MCTS:
             self._backpropagate(n, val_by_id[id(n)])
 
     def _expand(self, node: Node) -> float:
-        board_tensor = torch.tensor(
-            encode_board(node.board), dtype=torch.float32
-        ).unsqueeze(0).to(self.device)
+        """Expand a single node.
 
-        with torch.no_grad(), _autocast(self.device):
-            policy_logits, value = self.model(board_tensor)
-
-        value = float(value.item())
-        node.expand(policy_logits[0].cpu())
-        return value
+        IMPORTANT: when using BatchedInferenceClient, workers will not have a local
+        model and must route evaluations through the inference server.
+        """
+        val_by_id = self._infer_batch([node])
+        return val_by_id[id(node)]
 
     def _select(self, node: Node) -> Node:
         total_visits = sum((c.visits + c.virtual_visits) for c in node.children.values()) + 1
