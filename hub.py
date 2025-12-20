@@ -194,7 +194,6 @@ def run_rl_loop():
     do_promo = (do_promo != "n")
 
     promo_games = _read_int("Promotion match games", 50) if do_promo else 0
-    promo_sims = _read_int("Promotion MCTS simulations per move", 200) if do_promo else 200
     promo_threshold = _read_float("Promotion threshold (latest winrate)", 0.55) if do_promo else 0.0
 
     log("=== RL LOOP START ===")
@@ -202,6 +201,10 @@ def run_rl_loop():
 
     for it in range(1, iterations + 1):
         log(f"--- Iteration {it}/{iterations}: self-play ---")
+        workers=self_play_workers,
+        mcts_batch_size=mcts_batch_size,
+        infer_max_batch=infer_max_batch,
+        infer_wait_ms=infer_wait_ms,
         self_play(num_games=games_per_iter, simulations=simulations, shard_size=shard_size)
 
         log(f"--- Iteration {it}/{iterations}: train_rl ---")
@@ -209,7 +212,7 @@ def run_rl_loop():
 
         if do_promo:
             log(f"--- Iteration {it}/{iterations}: evaluate & promote ---")
-            evaluate_and_promote(num_games=promo_games, threshold=promo_threshold, simulations=promo_sims, loop_iteration=it, max_iterations=iterations, selfplay_sims=simulations)
+            evaluate_and_promote(num_games=promo_games, threshold=promo_threshold)
 
         elapsed = time.time() - t0
         log(f"Iteration {it} complete. Total elapsed: {elapsed:.1f}s")
@@ -265,8 +268,7 @@ def main_menu():
         elif choice == "7":
             games = _read_int("Promotion games", 50)
             thr = _read_float("Winrate threshold", 0.55)
-            sims = _read_int("Promotion MCTS simulations per move", 200)
-            evaluate_and_promote(num_games=games, threshold=thr, simulations=sims, loop_iteration=1, max_iterations=1)
+            evaluate_and_promote(num_games=games, threshold=thr)
 
         elif choice == "8":
             run_rl_loop()

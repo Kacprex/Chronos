@@ -60,6 +60,9 @@ class Node:
 
     prior: float = 0.0
     visits: int = 0
+    # "Virtual" visits used to reduce duplicate leaf selection when running
+    # simulations in batches (a lightweight virtual loss mechanism).
+    virtual_visits: int = 0
     value_sum: float = 0.0
 
     children: Dict[chess.Move, "Node"] = field(default_factory=dict)
@@ -106,6 +109,8 @@ class MCTS:
         simulations: int = 400,
         cpuct: float = 1.5,
         add_dirichlet_noise: bool = True,
+        eval_batch_size: int | None = None,
+        inference_client=None,
     ):
         self.model = model
         self.device = device
@@ -129,7 +134,16 @@ class MCTS:
         # --- Internal ---
         self.children = {}
 
-
+        # --- Batched leaf evaluation ---
+        # How many leaf nodes to evaluate in one forward pass.
+        # If not provided, it can be controlled via env var CHRONOS_MCTS_BATCH_SIZE.
+        if eval_batch_size is None:
+            try:
+                eval_batch_size = int(os.environ.get("CHRONOS_MCTS_BATCH_SIZE", "16"))
+            except Exception:
+                eval_batch_size = 16
+        self.eval_batch_size = max(1, int(eval_batch_size))
+        self.inference_client = inference_client
 
     def run(
         self,
@@ -163,20 +177,53 @@ class MCTS:
             self._add_dirichlet_noise(root)
 
         # ================= SIMULATIONS =================
-        for _ in range(self.simulations):
-            node = root
+        # Run simulations in mini-batches so that leaf evaluation (NN forward)
+        # happens in batches, which improves GPU utilization significantly.
+        sims_remaining = self.simulations
+        while sims_remaining > 0:
+            bsz = min(self.eval_batch_size, sims_remaining)
+            sims_remaining -= bsz
 
-            # Selection
-            while node.expanded and not node.is_terminal():
-                node = self._select(node)
+            leaves: list[Node] = []
+            paths: list[list[Node]] = []
 
-            # Evaluation / Expansion
-            if node.is_terminal():
-                value = self._terminal_value(node.board)
-                self._backpropagate(node, value)
-            else:
-                value = self._expand(node)
-                self._backpropagate(node, value)
+            # -------- Selection (batched) --------
+            for _ in range(bsz):
+                leaf, path = self._select_leaf_with_virtual_loss(root)
+                leaves.append(leaf)
+                paths.append(path)
+
+            # -------- Terminal check / De-duplication --------
+            values: list[float] = [0.0] * bsz
+            to_eval_map: dict[int, Node] = {}
+            for i, leaf in enumerate(leaves):
+                if leaf.is_terminal():
+                    values[i] = self._terminal_value(leaf.board)
+                else:
+                    to_eval_map[id(leaf)] = leaf
+
+            # -------- Batched NN evaluation --------
+            if to_eval_map:
+                unique_leaves = list(to_eval_map.values())
+                logits_b, values_b = self._infer_batch(unique_leaves)
+                # Expand unique leaves and store value per node-id
+                val_by_id: dict[int, float] = {}
+                for leaf, logits, v in zip(unique_leaves, logits_b, values_b):
+                    # Expand once; (noise is root-only)
+                    if not leaf.expanded:
+                        leaf.expand(logits)
+                    val_by_id[id(leaf)] = float(v)
+
+                for i, leaf in enumerate(leaves):
+                    if not leaf.is_terminal():
+                        values[i] = val_by_id[id(leaf)]
+
+            # -------- Backprop --------
+            for i in range(bsz):
+                # Remove virtual loss before updating real stats
+                for n in paths[i]:
+                    n.virtual_visits -= 1
+                self._backpropagate(leaves[i], values[i])
 
         # ================= POLICY FROM VISITS =================
         moves = []
@@ -208,21 +255,65 @@ class MCTS:
         return moves, probs
 
 
+    # ------------------ BATCH SELECTION / INFERENCE ------------------
+    def _select_leaf_with_virtual_loss(self, root: Node):
+        """Select a leaf node, returning (leaf, path).
 
-    # ------------------ HELPERS ------------------
-    def _expand_batch(self, nodes):
-        boards = torch.tensor(
-            [encode_board(n.board) for n in nodes],
-            dtype=torch.float32,
-            device=self.device
-        )
+        We add a lightweight virtual loss (virtual_visits) along the path so that
+        when running simulations in batches we don't keep selecting the same leaf
+        repeatedly before it gets expanded.
+        """
+        node = root
+        path = [node]
 
-        with torch.no_grad(), _autocast(self.device):
-            policy_logits, values = self.model(boards)
+        while node.expanded and not node.is_terminal():
+            node = self._select(node)
+            path.append(node)
+
+        for n in path:
+            n.virtual_visits += 1
+
+        return node, path
+
+    def _infer_batch(self, nodes: List[Node]):
+        """Run model inference on a list of nodes, expand each node, return values.
+
+        Returns:
+            dict: id(node) -> value (float)
+        """
+        if not nodes:
+            return {}
+
+        out = {}
+
+        # If we have an external inference client (batched GPU server), use it.
+        if self.inference_client is not None:
+            batch = np.stack([encode_board(n.board) for n in nodes]).astype(np.float32, copy=False)
+            pl_np, v_np = self.inference_client.infer_batch(batch)
+            policy_logits = torch.from_numpy(pl_np)
+            values = torch.from_numpy(v_np)
+        else:
+            if self.model is None:
+                raise RuntimeError("MCTS: model is None and no inference_client provided.")
+            boards = torch.tensor(
+                [encode_board(n.board) for n in nodes],
+                dtype=torch.float32,
+                device=self.device,
+            )
+            with torch.inference_mode(), _autocast(self.device):
+                policy_logits, values = self.model(boards)
 
         for n, pl, v in zip(nodes, policy_logits, values):
-            n.expand(pl.cpu())
-            self._backpropagate(n, float(v.item()))
+            if not n.expanded:
+                n.expand(pl.cpu())
+            out[id(n)] = float(v.item())
+
+        return out
+    def _expand_batch(self, nodes):
+        # Legacy helper (kept for compatibility): expands and backprops in batch.
+        val_by_id = self._infer_batch(nodes)
+        for n in nodes:
+            self._backpropagate(n, val_by_id[id(n)])
 
     def _expand(self, node: Node) -> float:
         board_tensor = torch.tensor(
@@ -237,17 +328,18 @@ class MCTS:
         return value
 
     def _select(self, node: Node) -> Node:
-        total_visits = sum(c.visits for c in node.children.values()) + 1
+        total_visits = sum((c.visits + c.virtual_visits) for c in node.children.values()) + 1
         best_score = -1e9
         best_child = None
 
         for child in node.children.values():
+            eff_visits = child.visits + child.virtual_visits
             q = child.value
             u = (
                self.cpuct
                * child.prior
                * math.sqrt(total_visits)
-               / (1 + child.visits)
+               / (1 + eff_visits)
             )
 
             score = q + u
