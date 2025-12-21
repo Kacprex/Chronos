@@ -1,191 +1,229 @@
-# Chronos project library
+# Chronos Project Library
 
-A “library index” of the codebase: **what each file is for, what it exports, and how it’s used**.
-
-This version includes the recent additions:
-- **Discord webhook logging** for promotion runs
-- **Chronos rating** (Stockfish-based) that runs only when a model is promoted
-- RL buffer retention cap (keep last N RL shards)
+This document is a **living reference** for the Chronos codebase: what each module does, how data flows through the system, and where the important knobs live.
 
 ---
 
-## High-level architecture
+## 1) Key ideas (one screen summary)
 
-1. **Encode** a position → 18×8×8 planes (`src/nn/encoding.py`)
-2. **Neural net** → policy logits (4672) + value (-1..1) (`src/nn/network.py`)
-3. **MCTS** refines policy (`src/mcts/mcts.py`)
-4. **Training**
-   - SL: imitate human next-move + game outcome
-   - RL: learn from MCTS policy targets + self-play outcome
-5. **Promotion**: latest vs best (`src/evaluation/promotion.py`)
-6. **Rating** (only after promotion): best vs Stockfish (`src/evaluation/chronos_rating.py`)
-7. **Logging**: Discord webhooks (`src/logging/discord_webhooks.py`)
+Chronos follows the usual AlphaZero loop:
+
+1. **Self-play**: play games using **MCTS guided by the neural network**.
+2. **Buffer**: store (state, MCTS policy, result) samples to disk as `.pt` shards.
+3. **RL training**: train the network on those shards.
+4. **Promotion**: pit `latest_model.pth` against `best_model.pth` and promote if the score is high enough.
 
 ---
 
-## Configuration & environment
+## 2) Repository map
 
-### `src/config.py`
-Central configuration: paths and output dirs.
-- `GM_GAMES_PATH`, `SHARD_DIR`
-- `RL_BUFFER_DIR`
-- `ENGINE_PATH` (Stockfish)
-- `BEST_MODEL_PATH`, `LATEST_MODEL_PATH`
-- PGN output paths (`AIVSAI`, `SFVSAI`)
-
-**Discord webhook config (recommended via env vars, not committed):**
-- `CHRONOS_PROMOTION_WEBHOOK` → promotion summary embeds
-- `CHRONOS_RATING_WEBHOOK` → rating embeds (only when promoted)
-
-**RL buffer retention:**
-- `CHRONOS_MAX_RL_SHARDS` (env var) controls how many `rl_shard_*.pt` files are kept.
-
----
-
-## Neural network & encoding
-
-### `src/nn/encoding.py`
-Board encoding + AlphaZero-style move indexing.
-- `MOVE_SPACE = 4672`
-- `encode_board(board) -> (18,8,8)` float32 planes
-- `move_to_index(move) -> int|None` *(or `move_to_index(move, board)` depending on version)*
-- `index_to_move(index, board) -> chess.Move` (scans legal moves)
-
-### `src/nn/network.py`
-Policy+value CNN.
-- `ResidualBlock`
-- `ChessNet(channels=128, num_res_blocks=5)`
-  - output policy logits: `(B,4672)`
-  - output value: `(B,1)` in `[-1,1]`
+```
+chronos/
+  hub.py
+  README.md
+  docs/
+    PROJECT_LIBRARY.md
+  src/
+    config.py
+    evaluation/
+      promotion.py
+    logging/
+      discord_webhooks.py
+    mcts/
+      mcts.py
+      node.py
+    nn/
+      encoding.py
+      model.py
+    selfplay/
+      self_play_worker.py
+    training/
+      train_rl.py
+```
 
 ---
 
-## MCTS
+## 3) Configuration (`src/config.py`)
 
-### `src/mcts/mcts.py`
-The active MCTS implementation.
-- `Node` (internal; stores board, prior, visits, value_sum, children)
-- `MCTS.run(board, move_number, add_noise=True) -> (moves, probs)`
-  - Uses internal temperature scheduling (explore early, deterministic later)
-  - Returns probability distribution derived from child visits
+The project is intentionally configured from **one file**.
 
-> Note: Old placeholder files like `src/mcts/node.py` and `src/mcts/puct.py` are not used by the active MCTS (and can stay removed).
+### Paths
 
----
+- `ENGINE_PATH`: Stockfish executable path (used in Stockfish-vs-AI modes / evaluation features).
+- `MODEL_DIR`: directory that stores models.
+- `BEST_MODEL_PATH`: the current best model checkpoint.
+- `LATEST_MODEL_PATH`: the checkpoint written by training.
+- `CHECKPOINT_DIR`: where resuming checkpoints live (e.g. `rl_resume.pt`).
 
-## Self-play & RL data generation
+### RL buffer / storage (tuned for ~250 GB spare)
 
-### `src/selfplay/opening_book.py`
-Small curated opening set.
-- `OPENINGS`
-- `play_random_opening(board, max_plies=6) -> int`
+- `RL_BUFFER_DIR`: where self-play writes shards (`.pt` files).
+- `RL_BUFFER_MAX_GB`: max size of buffer on disk (default: **250 GB**).
+- `RL_BUFFER_PRUNE_KEEP_GB`: after pruning, keep the buffer under this (default: **220 GB**).
 
-### `src/selfplay/encode_game.py`
-PGN writing utilities.
-- `GameRecord` (moves_uci, result, headers; can append to file safely)
-- `build_game_record_from_moves(moves, result, ...) -> GameRecord`
+**How pruning works:** self-play calls `_prune_rl_buffer_if_needed()` before writing shards. It deletes the oldest shard files until the buffer drops under the keep threshold.
 
-### `src/selfplay/self_play_worker.py`
-Self-play + RL shard writer.
-- `play_single_game(...) -> (boards, policies, z_white)`
-- `self_play(num_games, simulations, shard_size)`
-  - Loads `BEST_MODEL_PATH`
-  - Writes `rl_shard_*.pt` to `RL_BUFFER_DIR`
+### Discord
 
-**RL shard format** (`rl_shard_*.pt`):
-- `boards`: `(N, 18, 8, 8)` float32
-- `policies`: `(N, 4672)` float32 probabilities from MCTS
-- `values`: `(N, 1)` float32 in `[-1, 1]` from **side-to-move perspective**
+- `DISCORD_PROMOTION_WEBHOOK`: webhook URL for promotion notifications.
 
-**Disk safety**:
-- Keeps only newest `CHRONOS_MAX_RL_SHARDS` RL shards (default 300).
+You can set the webhook without editing code using the environment variable:
+
+```powershell
+$env:CHRONOS_PROMOTION_WEBHOOK = "<your webhook url>"
+```
+
+If Discord replies with `403 Forbidden`, the webhook token is invalid/revoked or the webhook is no longer allowed to post in that channel.
 
 ---
 
-## Training
+## 4) Data formats
 
-### `src/training/train_supervised.py`
-Supervised training from SL shards.
-- resume checkpoint: `models/checkpoints/phase1_resume.pt`
-- key functions: `get_shard_paths`, `load_resume_state`, `save_checkpoint`, `train`
+### 4.1 RL shards (`.pt` files)
 
-Loss:
-- policy: `CrossEntropyLoss(policy_logits, argmax(onehot_policy))`
-- value: `MSELoss(value_pred, value_target)`
+Self-play saves a shard as a PyTorch dictionary:
 
-### `src/training/train_rl.py`
-RL training from RL shards.
-- resume checkpoint: `models/checkpoints/rl_resume.pt`
-- key functions: `get_rl_shards`, `load_resume_state`, `save_checkpoint`, `train_rl`
+- `x`: board tensor, shape `(N, 18, 8, 8)` (float32)
+- `pi`: MCTS move distribution, shape `(N, MOVE_SPACE)` (float32)
+- `z`: final game result from the current player’s perspective, shape `(N, 1)` (float32)
 
-Loss:
-- policy: `KLDivLoss(log_softmax(logits), target_pi)`
-- value: `MSELoss(value_pred, value_target)`
+Where:
+- `N` is the number of positions in the shard.
+- `MOVE_SPACE` is defined in `src/nn/encoding.py`.
 
-Output:
-- updates `LATEST_MODEL_PATH`
+`train_rl.py` supports both this **current** format (`x/pi/z`) and an older naming (`boards/policies/values`) so you can mix buffers without crashes.
 
----
+### 4.2 Model checkpoints (`.pth`)
 
-## Evaluation, promotion, and rating
+- Stored with `torch.save(model.state_dict(), path)`.
+- The architecture must match `src/nn/model.py`.
 
-### `src/evaluation/promotion.py`
-Promotion check: latest vs best.
-- `evaluate_and_promote(num_games=50, threshold=0.55, ...)`
-  - alternates colors
-  - promotes if average score ≥ threshold
-  - emits **Discord webhook embed** summarizing winrate & outcome
+### 4.3 Resume checkpoint (`rl_resume.pt`)
 
-### `src/evaluation/chronos_rating.py`
-Runs only when a promotion happens.
-- Plays a short match: Chronos (best) vs Stockfish (depth configured)
-- Computes:
-  - match score
-  - approximate Elo difference vs that Stockfish config
-  - “Chronos rating index” = 1500 + EloDiff (internal metric)
-- Sends embed to rating webhook.
+Used to resume RL training and typically includes:
+- model weights
+- optimizer state
+- scaler state (when AMP is enabled)
+- training step counters
 
-### `src/evaluation/diversity_test.py`
-Checks PGN diversity in `data/PGN`.
-Reports:
-- opening diversity (first N plies)
-- results distribution
-- game length stats
-
-### `src/evaluation/stockfish_eval.py`
-Value-head calibration against Stockfish on sampled positions.
-- samples FENs from CSV `GM_GAMES_PATH`
-- evaluates Stockfish score vs NN value
-- reports MAE/MSE/correlation + sample FENs
+Exact fields are defined by `src/training/train_rl.py`.
 
 ---
 
-## Logging
+## 5) Core modules
 
-### `src/logging/discord_webhooks.py`
-Minimal Discord webhook client + embed helpers.
-- `send_webhook(url, payload)`
-- `promotion_embed(...)`
-- `rating_embed(...)`
+### 5.1 Neural network (`src/nn/model.py`)
 
-### `hub.py`
-Interactive CLI / orchestration.
-- Self-play only
-- Train RL only / cycle
-- Evaluate & promote
-- Run RL loop (self-play → train_rl → promote)
-- Passes loop context into promotion logging (iteration/max, sims, etc.)
+Defines the policy/value network.
+
+Inputs:
+- encoded board tensor from `encoding.encode_board()`
+
+Outputs:
+- `policy_logits`: logits over `MOVE_SPACE`
+- `value`: scalar in `[-1, 1]` (tanh or similar)
+
+### 5.2 Board & move encoding (`src/nn/encoding.py`)
+
+- `encode_board(board)` builds the **18-plane** representation.
+- Move indexing maps chess moves to a fixed action space `MOVE_SPACE`.
+
+**Important limitation (current):** promotion moves are indexed using `from_square` and promotion piece without encoding the `to_square`. That means multiple different promotions can collide into the same index, and `index_to_move()` can become ambiguous for promotions.
+
+En passant is currently not encoded.
+
+### 5.3 MCTS (`src/mcts/mcts.py`, `src/mcts/node.py`)
+
+Runs MCTS with PUCT-style selection:
+- Expand: evaluate leaf with the NN → policy prior + value
+- Backup: propagate value up the tree
+- Final move selection: proportional to visit counts (with optional Dirichlet noise for exploration)
+
+The MCTS class supports **batched inference** for speed.
+
+### 5.4 Self-play (`src/selfplay/self_play_worker.py`)
+
+Responsibilities:
+- Spawn multiple worker processes.
+- Each worker plays games, collects samples, and periodically writes shards.
+- Prune the RL buffer when it exceeds the configured size.
+
+Key tunables (passed from `hub.py`):
+- number of workers
+- MCTS simulations per move
+- inference batch size
+- shard size (positions per shard)
+
+### 5.5 RL training (`src/training/train_rl.py`)
+
+Responsibilities:
+- Load shards from `RL_BUFFER_DIR`.
+- Build a dataset of `(x, pi, z)` samples.
+- Train the network for the requested number of epochs/steps.
+- Save:
+  - `latest_model.pth`
+  - resume checkpoint (`rl_resume.pt`)
+
+Losses:
+- **Policy loss**: cross-entropy against the target distribution `pi`.
+- **Value loss**: MSE against `z`.
+
+AMP (automatic mixed precision) is enabled when CUDA is available.
+
+### 5.6 Promotion (`src/evaluation/promotion.py`)
+
+- Plays `N` games of `latest` vs `best` (switching colors).
+- Computes score as: win=1, draw=0.5, loss=0.
+- Promotes if `score / N >= threshold`.
+
+If `DISCORD_PROMOTION_WEBHOOK` is configured, it posts the result to Discord.
+
+### 5.7 Discord webhooks (`src/logging/discord_webhooks.py`)
+
+A tiny helper that POSTs JSON to Discord using the standard library (`urllib`).
 
 ---
 
-## Data preprocessing
+## 6) Typical workflows
 
-### `preprocess_rust.py`
-Build SL shards from a CSV using a Rust helper module to extract SAN moves fast.
-- constants: `SAMPLE_RATE`, `SHARD_SIZE`
-- `preprocess()`: reads `GM_GAMES_PATH`, writes `shard_*.pt` to `SHARD_DIR`
+### 6.1 First run (minimal)
 
-SL shard format:
-- `boards`: `(N, 18, 8, 8)` float32
-- `policies`: `(N, 4672)` float32 one-hot
-- `values`: `(N, 1)` float32 in `[-1, 1]` (white outcome)
+1. Configure paths in `src/config.py` (Stockfish, models dir, RL buffer dir).
+2. Make sure `best_model.pth` exists at `BEST_MODEL_PATH`.
+3. Start the hub and run an RL loop:
+
+```powershell
+python hub.py
+```
+
+Choose option **8** (RL loop) and start with conservative settings.
+
+### 6.2 Storage management
+
+The RL buffer can grow fast. With the defaults:
+- Hard cap: **250 GB**
+- Prune target: **220 GB**
+
+If you want to free space immediately, you can delete the oldest shard files in `RL_BUFFER_DIR`.
+
+---
+
+## 7) Troubleshooting cheatsheet
+
+- `KeyError: 'boards'` during RL training → your shards are `x/pi/z` and you need the updated `train_rl.py`.
+- `HTTP Error 403: Forbidden` from Discord → webhook invalid/revoked (regenerate).
+- Self-play worker crash → most often:
+  - missing / wrong `BEST_MODEL_PATH`
+  - checkpoint architecture mismatch
+  - out-of-memory (reduce workers, batch size, or simulations)
+
+---
+
+## 8) What to improve next
+
+High-impact next steps (not implemented here, but worth tracking):
+
+1. Fix promotion move-index collisions for promotions (include `to_square` in the encoding).
+2. Add en passant plane to the board encoding.
+3. Make RL training sample a *balanced mix* of old + recent shards (instead of “load everything”).
+4. Add an evaluation Elo ladder vs multiple past bests (to reduce regressions).

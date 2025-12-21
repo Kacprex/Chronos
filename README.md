@@ -1,178 +1,152 @@
-# ♟️ Chronos
+# Chronos
 
-**Chronos** is a complete **AlphaZero-style chess engine implemented from scratch**.
+Chronos is an AlphaZero-style chess project:
 
-The project combines **neural networks**, **Monte Carlo Tree Search (MCTS)**, **supervised learning**, and **reinforcement learning through self-play**.  
-The system learns chess **without handcrafted evaluation rules**, improving purely through data and search.
+- **Self-play** generates training data using **MCTS + a neural network**.
+- **RL training** learns from those self-play positions (**policy + value heads**).
+- **Promotion** evaluates `latest_model.pth` vs `best_model.pth` and promotes if the winrate clears a threshold.
 
-> This is **not a toy project**.  
-> Chronos is a **research-grade implementation** designed to be modular, restartable, observable, and safe to run on consumer hardware.
-
----
-
-## 🧠 Core Concepts
-
-Chronos is built around the following principles:
-
-- Neural network with **policy and value heads**
-- **Monte Carlo Tree Search** guided by the neural network
-- **Supervised learning** from strong human games
-- **Reinforcement learning** via self-play
-- Continuous evaluation against **Stockfish**
-- Explicit **diversity monitoring** to prevent policy collapse
+The main entrypoint is **`hub.py`** (interactive menu).
 
 ---
 
-## ✨ Features
+## Project layout
 
-### AlphaZero-Style MCTS
-- Dirichlet noise at the root
-- Temperature scheduling
-- Opening randomness
-
-### Training & Learning
-- Supervised learning pipeline with **shard-based datasets**
-- Self-play engine producing training samples and PGNs
-- Reinforcement learning loop
-
-### Evaluation & Safety
-- AI vs AI and Stockfish vs AI match generation
-- PGN export for all played games
-- Diversity testing for policy health
-- Model promotion system (**latest vs best**)
-- Safe, RAM-aware memory usage
-- GPU acceleration (CUDA supported)
-
----
-
-## 🗂️ Project Structure
-
-### Top-Level Files
-hub.py # Central command-line interface
-config.py # Global configuration, paths, and defaults
-data/ # Datasets, training shards, PGNs
-
-
-### Source Code (`src/`)
-src/
-├── nn/ # Neural network architecture & board/move encoding
-├── mcts/ # Monte Carlo Tree Search implementation
-├── selfplay/ # Self-play engine and PGN encoding
-├── training/ # Supervised and reinforcement learning pipelines
-├── evaluation/ # Stockfish evaluation and diversity testing
-└── utils/ # Logging, device handling, shared utilities
-
+```
+chronos/
+  hub.py
+  README.md
+  docs/
+    PROJECT_LIBRARY.md
+  src/
+    config.py
+    evaluation/
+      promotion.py
+    logging/
+      discord_webhooks.py
+    mcts/
+      mcts.py
+      node.py
+    nn/
+      encoding.py
+      model.py
+    selfplay/
+      self_play_worker.py
+    training/
+      train_rl.py
+```
 
 ---
 
-## ▶️ How to Use
+## Installation (Windows + PowerShell)
 
-Run the project via:
+Create a virtual environment and install dependencies:
 
-```bash
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+```
+
+1) **Install PyTorch** (CPU or CUDA) using the command generated on the PyTorch website.
+
+2) Install the remaining packages:
+
+```powershell
+pip install -r requirements.txt
+```
+
+---
+
+## Configuration
+
+All default settings live in `src/config.py`.
+
+### Required paths
+
+- `ENGINE_PATH` – path to your Stockfish binary.
+- `MODELS_DIR` – directory containing `best_model.pth` and `latest_model.pth`.
+
+### RL buffer & disk usage
+
+Self-play writes shards to `RL_BUFFER_DIR` (default: `E:/chronos/chronos_rl_buffer`).
+
+The buffer is auto-pruned when it gets too large:
+
+- `RL_BUFFER_MAX_GB` (default **250**) – hard cap.
+- `RL_BUFFER_PRUNE_KEEP_GB` (default **220**) – after pruning, keep roughly this much.
+
+This matches the assumption that you have **~250 GB** of storage to spare for RL data.
+
+### Discord notifications (promotion)
+
+Promotion results can be posted to Discord.
+
+Set the webhook either by editing `DISCORD_PROMOTION_WEBHOOK` in `src/config.py` **or** by setting an environment variable:
+
+```powershell
+$env:CHRONOS_PROMOTION_WEBHOOK = "<your webhook url>"
+```
+
+If you get `HTTP Error 403: Forbidden`, the webhook URL/token is invalid or has been revoked—create a new webhook and update it.
+
+---
+
+## Running
+
+```powershell
 python hub.py
-This launches an interactive menu with options to:
+```
 
-Run self-play followed by reinforcement learning
+Recommended flow:
 
-Generate self-play games only
+- **Option 8: Run RL loop** (self-play → train_rl → promote)
 
-Play AI vs AI and export PGNs
+The RL loop asks for:
+- self-play games per iteration
+- number of self-play worker processes
+- MCTS simulations per move
+- RL shard size (positions)
+- promotion match games + threshold
 
-Play Stockfish vs AI and export PGNs
+---
 
-Run diversity tests
+## RL shard format (important)
 
-Run Stockfish evaluation on the model
+Self-play saves each shard as a PyTorch `.pt` dict with:
 
-Evaluate and promote models
+- `x`: board tensor, shape `(N, 18, 8, 8)`
+- `pi`: MCTS move distribution per position, shape `(N, MOVE_SPACE)`
+- `z`: game result from the current player’s perspective, shape `(N, 1)`
 
-Exit
+`train_rl.py` supports both the current keys (`x/pi/z`) and an older naming (`boards/policies/values`) if you have older shards.
 
-When prompted, always provide:
+---
 
-Number of games
+## Known limitations
 
-MCTS simulations per move
+- **Promotion move indexing collision:** promotions are currently indexed without encoding the `to_square`, so different promotion moves from the same `from_square` can collide. This can make `index_to_move` ambiguous for promotions.
+- **En passant** is not encoded.
 
-Stockfish depth (when applicable)
+(These are documented in more detail in `docs/PROJECT_LIBRARY.md`.)
 
-🔄 Training Workflow
-Recommended workflow for new experiments:
+---
 
-Run supervised learning to initialize the model
+## Troubleshooting
 
-Verify basic behavior using AI vs AI games
+### `KeyError: 'boards'` during RL training
 
-Run diversity tests to ensure exploration
+Your RL shards were written with the new keys (`x/pi/z`) but your `train_rl.py` expected `boards/policies/values`.
+Update `src/training/train_rl.py` (this repo version already handles both formats).
 
-Start self-play game generation
+### Self-play workers crash
 
-Train using reinforcement learning
+- Make sure `best_model.pth` exists where `BEST_MODEL_PATH` points.
+- If you changed the model architecture, ensure the checkpoint matches the code.
 
-Periodically evaluate against Stockfish
+### Discord webhook errors
 
-Promote stronger models automatically
+- `403 Forbidden`: invalid / revoked webhook token, regenerate.
+- `404 Not Found`: wrong webhook URL.
+- Corporate proxies/firewalls can also block webhook posts.
 
-All steps are restartable and safe to interrupt.
-
-🧪 Diversity & Stability
-Chronos includes an explicit diversity testing module that analyzes PGN files and reports:
-
-Game result distribution
-
-Color balance
-
-Game length statistics
-
-Opening diversity
-
-This prevents silent failure modes such as:
-
-Repetitive openings
-
-Deterministic move loops
-
-Policy collapse
-
-💻 Hardware Requirements
-Designed and tested for consumer hardware:
-
-CPU: Modern multi-core consumer CPUs
-
-GPU: NVIDIA GPU with CUDA support (optional)
-
-RAM: Moderate usage via shard-based loading
-
-Parallelization is intentionally conservative to avoid memory spikes.
-
-📈 Current Status
-Core engine: ✅ complete and functional
-
-MCTS: ✅ stable with exploration mechanisms
-
-Self-play: ✅ running correctly
-
-Reinforcement learning: ✅ operational
-
-Evaluation tools: ✅ operational
-
-Strength is expected to increase with additional self-play and training time.
-
-🎯 Goals
-Chronos aims to:
-
-Demonstrate a full AlphaZero-style system end-to-end
-
-Serve as a learning and research platform
-
-Remain understandable and maintainable
-
-Avoid hidden magic or black-box behavior
-
-📜 License
-This project is intended for educational and research purposes.
-License details can be added as needed.
-
-📝 Final Note
-Chronos represents a serious implementation of a modern chess AI system.
