@@ -21,8 +21,22 @@ LATEST_MODEL_PATH = os.path.join(MODEL_DIR, "latest_model.pth")
 
 # RL replay buffer (self-play shards)
 RL_BUFFER_DIR = "E:/chronos/chronos_rl_buffer"
+
+# RL replay buffer size cap (bytes). Default is 250 GB (your stated budget).
+RL_BUFFER_MAX_GB = int(os.environ.get("CHRONOS_RL_BUFFER_MAX_GB", "250"))
+RL_BUFFER_MAX_BYTES = RL_BUFFER_MAX_GB * (1024 ** 3)
+
 os.makedirs(RL_BUFFER_DIR, exist_ok=True)
 os.makedirs(os.path.join(PROJECT_ROOT,'data'), exist_ok=True)
+
+# RL training resume checkpoint
+# Used by the hub and training code to resume RL training after interruptions.
+RL_RESUME_PATH = os.path.join(MODEL_DIR, "checkpoints", "rl_resume.pt")
+
+# If True, whenever a promotion attempt fails, the hub may optionally reset
+# latest_model.pth back to best_model.pth (to avoid training drift). Kept False
+# by default so training can continue from the current latest.
+RESET_LATEST_ON_FAILED_PROMOTION = False
 
 #Engine
 ENGINE_PATH = os.path.join(PROJECT_ROOT, "engine", "stockfish.exe")
@@ -48,3 +62,15 @@ if not DISCORD_RATING_WEBHOOK and DISCORD_RANKING_WEBHOOK:
 
 # Local rating cache file (kept in gitignored data/ by default)
 RATING_CACHE_PATH = os.path.join(PROJECT_ROOT, 'data', 'chronos_rating_last.json')
+
+
+# General logging (errors, status updates) - can be set via env or a local file.
+# Priority: CHRONOS_LOG_WEBHOOK -> CHRONOS_DISCORD_WEBHOOK -> data/discord_webhook_url.txt
+_LOG_HOOK = os.environ.get("CHRONOS_LOG_WEBHOOK", "").strip() or os.environ.get("CHRONOS_DISCORD_WEBHOOK", "").strip()
+if not _LOG_HOOK:
+    try:
+        _LOG_HOOK = Path("data/discord_webhook_url.txt").read_text(encoding="utf-8").strip()
+    except Exception:
+        _LOG_HOOK = ""
+DISCORD_LOG_WEBHOOK = _LOG_HOOK
+

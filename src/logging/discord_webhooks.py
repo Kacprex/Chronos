@@ -1,6 +1,7 @@
 import json
 import os
 import urllib.request
+import urllib.error
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
@@ -12,19 +13,63 @@ def _utc_iso() -> str:
 def _post_json(url: str, payload: Dict[str, Any], timeout: int = 10) -> None:
     if not url:
         return
+    url = url.strip()
+    # Normalize legacy Discord webhook domain to avoid redirects that can break POST.
+    url = url.replace("https://discordapp.com/api/webhooks/", "https://discord.com/api/webhooks/")
+    url = url.replace("http://discordapp.com/api/webhooks/", "https://discord.com/api/webhooks/")
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
         url=url,
         data=data,
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            # Some endpoints reject requests without a UA.
+            "User-Agent": "Chronos/1.0 (urllib)",
+        },
         method="POST",
     )
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             resp.read()
+    except urllib.error.HTTPError as e:
+        # Read body for better diagnostics (Discord often includes a JSON error).
+        try:
+            body = e.read().decode("utf-8", errors="replace")
+        except Exception:
+            body = ""
+        print(f"[discord] Warning: webhook HTTP {e.code} {e.reason}. {body}".strip())
     except Exception as e:
         # Never crash training because Discord failed.
         print(f"[discord] Warning: failed to post webhook: {e}")
+
+
+def send_discord_message(
+    webhook_url: str,
+    content: str,
+    *,
+    username: str = "Chronos",
+    timeout: int = 10,
+) -> None:
+    """Send a plain text Discord webhook message.
+
+    Discord has a ~2000 character content limit. We chunk long messages safely.
+    """
+    if not webhook_url or not content:
+        return
+
+    max_len = 1900  # keep some headroom
+    chunks = [content[i : i + max_len] for i in range(0, len(content), max_len)]
+    for chunk in chunks:
+        _post_json(
+            webhook_url,
+            {
+                "username": username,
+                "content": chunk,
+                # Avoid pinging anyone by accident
+                "allowed_mentions": {"parse": []},
+            },
+            timeout=timeout,
+        )
 
 
 def send_promotion_embed(

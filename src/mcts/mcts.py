@@ -289,11 +289,8 @@ class MCTS:
         else:
             if self.model is None:
                 raise RuntimeError("MCTS: model is None and no inference_client provided.")
-            boards = torch.tensor(
-                [encode_board(n.board) for n in nodes],
-                dtype=torch.float32,
-                device=self.device,
-            )
+            boards_np = np.stack([encode_board(n.board) for n in nodes]).astype(np.float32, copy=False)
+            boards = torch.from_numpy(boards_np).to(self.device)
             with torch.inference_mode(), _autocast(self.device):
                 policy_logits, values = self.model(boards)
 
@@ -310,16 +307,10 @@ class MCTS:
             self._backpropagate(n, val_by_id[id(n)])
 
     def _expand(self, node: Node) -> float:
-        board_tensor = torch.tensor(
-            encode_board(node.board), dtype=torch.float32
-        ).unsqueeze(0).to(self.device)
-
-        with torch.no_grad(), _autocast(self.device):
-            policy_logits, value = self.model(board_tensor)
-
-        value = float(value.item())
-        node.expand(policy_logits[0].cpu())
-        return value
+        # NOTE: self-play may run in "batched" mode where `model` is None and we
+        # talk to an inference server via `inference_client`. In that case we must
+        # use `_infer_batch` (which supports both paths) instead of calling model directly.
+        return self._infer_batch([node])[id(node)]
 
     def _select(self, node: Node) -> Node:
         total_visits = sum((c.visits + c.virtual_visits) for c in node.children.values()) + 1

@@ -1,12 +1,13 @@
 import os
 import time
+import shutil
 from datetime import datetime
 
 import chess
 import chess.pgn
 import torch
 
-from src.config import AIVSAI, SFVSAI, ENGINE_PATH, BEST_MODEL_PATH
+from src.config import AIVSAI, SFVSAI, ENGINE_PATH, BEST_MODEL_PATH, LATEST_MODEL_PATH, RL_RESUME_PATH, RESET_LATEST_ON_FAILED_PROMOTION
 from src.nn.network import ChessNet
 from src.selfplay.encode_game import GameRecord
 from src.selfplay.self_play_worker import self_play
@@ -14,13 +15,30 @@ from src.training.train_rl import train_rl
 from src.evaluation.promotion import evaluate_and_promote
 from src.evaluation.diversity_test import main as run_diversity_test
 from src.evaluation.stockfish_eval import evaluate_model_vs_stockfish
+from src.logging.discord_logger import log_to_discord
 
 from src.mcts.mcts import MCTS
 
 
 def log(msg: str):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[{now}] {msg}")
+    line = f"[{now}] {msg}"
+    print(line)
+    # Best-effort: forward key events to Discord (rate-limited in the logger)
+    log_to_discord(line)
+
+
+def _reset_latest_to_best(reason: str):
+    """Option A: if a candidate doesn't get promoted, snap back to best."""
+    try:
+        if os.path.exists(BEST_MODEL_PATH):
+            shutil.copy2(BEST_MODEL_PATH, LATEST_MODEL_PATH)
+            # The RL resume checkpoint contains optimizer state for the discarded candidate.
+            if os.path.exists(RL_RESUME_PATH):
+                os.remove(RL_RESUME_PATH)
+            log(f"Latest reset to best ({reason}).")
+    except Exception as e:
+        log(f"WARN: failed to reset latest to best: {e}")
 
 
 def _read_int(prompt: str, default: int) -> int:
@@ -216,7 +234,12 @@ def run_rl_loop():
 
         if do_promo:
             log(f"--- Iteration {it}/{iterations}: evaluate & promote ---")
-            evaluate_and_promote(num_games=promo_games, threshold=promo_threshold)
+            promo = evaluate_and_promote(num_games=promo_games, threshold=promo_threshold)
+
+            # Option A: if the candidate fails promotion, reset latest back to best
+            # and clear the RL resume checkpoint so training starts clean next iter.
+            if RESET_LATEST_ON_FAILED_PROMOTION and not promo.get("promoted", False):
+                _reset_latest_to_best(clear_resume=True)
 
         elapsed = time.time() - t0
         log(f"Iteration {it} complete. Total elapsed: {elapsed:.1f}s")

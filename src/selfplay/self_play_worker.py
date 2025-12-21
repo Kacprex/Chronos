@@ -9,7 +9,7 @@ import chess
 import numpy as np
 import torch
 
-from src.config import BEST_MODEL_PATH, RL_BUFFER_DIR
+from src.config import BEST_MODEL_PATH, RL_BUFFER_DIR, RL_BUFFER_MAX_BYTES
 from src.mcts.mcts import MCTS
 from src.inference.batched_inference import BatchedInferenceServer, BatchedInferenceClient
 from src.nn.encoding import MOVE_SPACE, encode_board, move_to_index
@@ -44,15 +44,72 @@ def _discover_next_shard_id(rl_dir: str) -> int:
         return 0
 
 
-def _save_shard(samples: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]], shard_id: int) -> str:
-    os.makedirs(RL_BUFFER_DIR, exist_ok=True)
-    out_path = os.path.join(RL_BUFFER_DIR, f"rl_shard_{shard_id:06d}.pt")
+def _enforce_rl_buffer_limit(rl_dir: str, max_bytes: int) -> None:
+    """Delete the oldest shards if the buffer exceeds max_bytes."""
+    if max_bytes <= 0:
+        return
+
+    try:
+        entries = []
+        total = 0
+        for name in os.listdir(rl_dir):
+            if not (name.startswith("rl_shard_") and name.endswith(".pt")):
+                continue
+            path = os.path.join(rl_dir, name)
+            try:
+                st = os.stat(path)
+            except OSError:
+                continue
+            total += int(st.st_size)
+            entries.append((float(st.st_mtime), int(st.st_size), path))
+
+        if total <= max_bytes:
+            return
+
+        entries.sort(key=lambda x: x[0])  # oldest first
+        deleted = 0
+        while entries and total > max_bytes:
+            _, sz, path = entries.pop(0)
+            try:
+                os.remove(path)
+                total -= sz
+                deleted += 1
+            except OSError:
+                continue
+
+        if deleted:
+            _log(f"RL buffer over limit -> deleted {deleted} oldest shard(s).")
+    except FileNotFoundError:
+        return
+
+
+def _save_shard(
+    out_dir: str,
+    samples: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
+    shard_id: int | None = None,
+) -> str:
+    """Persist one RL shard to disk.
+
+    NOTE: We intentionally pass `out_dir` explicitly (instead of relying on the
+    global `RL_BUFFER_DIR`) because self-play workers run in separate processes
+    and we want the call-sites to be unambiguous.
+    """
+    import secrets
+
+    os.makedirs(out_dir, exist_ok=True)
+    if shard_id is None:
+        # Avoid cross-process collisions without requiring shared state.
+        shard_id = (time.time_ns() << 16) | secrets.randbits(16)
+
+    out_path = os.path.join(out_dir, f"rl_shard_{shard_id}.pt")
     payload = {
         "x": torch.stack([s[0] for s in samples]),
         "pi": torch.stack([s[1] for s in samples]),
         "z": torch.stack([s[2] for s in samples]),
     }
     torch.save(payload, out_path)
+    # Keep disk usage bounded (...)
+    _enforce_rl_buffer_limit(out_dir, RL_BUFFER_MAX_BYTES)
     return out_path
 
 
@@ -109,7 +166,7 @@ def _selfplay_worker_process(
             shard_samples = buffer[:shard_size]
             buffer = buffer[shard_size:]
             sid = _take_shard_id(shard_counter, shard_lock)
-            _save_shard(shard_samples, sid)
+            _save_shard(RL_BUFFER_DIR, shard_samples, sid)
 
         with games_done.get_lock():
             games_done.value += 1
@@ -117,7 +174,7 @@ def _selfplay_worker_process(
     # Flush remainder
     if buffer:
         sid = _take_shard_id(shard_counter, shard_lock)
-        _save_shard(buffer, sid)
+        _save_shard(RL_BUFFER_DIR, buffer, sid)
 
 
 def _safe_probs(probs: np.ndarray) -> np.ndarray:
@@ -385,20 +442,34 @@ def self_play(
         p.start()
         procs.append(p)
 
-    # Progress loop
+    # Progress loop (rate-limited to avoid very spammy logs)
     t0 = time.time()
-    last = -1
+    report_every = 1 if num_games <= 10 else 10
+    next_report = 0
     while any(p.is_alive() for p in procs):
         with games_counter.get_lock():
             done = int(games_counter.value)
-        if done != last:
+        if done >= next_report:
             dt = time.time() - t0
             print(f"[Self-play] {done}/{num_games} games | {dt:.1f}s elapsed | workers={workers}", flush=True)
-            last = done
+            # Move the next report threshold forward, but don't skip final report
+            while next_report <= done:
+                next_report += report_every
         time.sleep(1.0)
+
+    # Final report
+    with games_counter.get_lock():
+        done = int(games_counter.value)
+    dt = time.time() - t0
+    print(f"[Self-play] {done}/{num_games} games | {dt:.1f}s elapsed | workers={workers}", flush=True)
 
     for p in procs:
         p.join()
+
+        # If any worker crashed, don't silently continue into RL training with 0 samples.
+        bad = [(i, p.exitcode) for i, p in enumerate(procs, start=1) if p.exitcode not in (0, None)]
+        if bad:
+            raise RuntimeError(f"Self-play worker(s) crashed: {bad}")
 
     # Stop server
     try:

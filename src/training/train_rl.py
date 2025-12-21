@@ -13,6 +13,16 @@ from src.config import RL_BUFFER_DIR, LATEST_MODEL_PATH, BEST_MODEL_PATH
 from src.nn.network import ChessNet
 
 
+def _pick_first(d: dict, keys):
+    """Return the first existing value for any of the provided keys."""
+    for k in keys:
+        if k in d:
+            return d[k]
+    raise KeyError(
+        f"RL shard missing expected keys. Looked for {keys}. Present keys: {list(d.keys())}"
+    )
+
+
 BATCH_SIZE = 256
 LR = 1e-4
 WEIGHT_DECAY = 1e-4
@@ -112,9 +122,19 @@ def train_rl():
             shard_t0 = time.time()
 
             shard = torch.load(shard_path, map_location="cpu")
-            boards = shard["boards"]
-            policies = shard["policies"]  # already probabilities from MCTS
-            values = shard["values"]
+
+            # Support both shard schemas:
+            # - old:  {"boards", "policies", "values"}
+            # - new:  {"x", "pi", "z"} (self-play buffer)
+            boards = _pick_first(shard, ["boards", "x"])
+            policies = _pick_first(shard, ["policies", "pi", "probs"])
+            values = _pick_first(shard, ["values", "z", "value"])
+
+            boards = torch.as_tensor(boards)
+            policies = torch.as_tensor(policies)
+            values = torch.as_tensor(values, dtype=torch.float32)
+            if values.ndim == 1:
+                values = values.view(-1, 1)
 
             dataset = TensorDataset(boards, policies, values)
             loader = DataLoader(
