@@ -32,13 +32,24 @@ from src.common.generation import read_generation, write_generation
 from src.mcts.mcts import MCTS
 
 
-def log(msg: str):
+def log(msg: str, *, discord: bool = True):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     line = f"[{now}] {msg}"
     print(line)
-    # Best-effort: forward key events to Discord (rate-limited in the logger)
-    log_to_discord(line)
 
+    # Best-effort: forward *important* events to Discord (rate-limited in the logger).
+    # Avoid spamming Discord with loop markers / progress lines.
+    if discord:
+        noisy_prefixes = (
+            "--- Iteration",
+            "=== RL LOOP",
+            "Iteration ",
+            "Self-play ",
+            "Train RL ",
+            "Training RL",
+        )
+        if not msg.startswith(noisy_prefixes):
+            log_to_discord(line)
 
 def _reset_latest_to_best(*, clear_resume: bool = True, reason: str = "candidate failed promotion"):
     """If a candidate doesn't get promoted, snap latest back to best."""
@@ -260,55 +271,90 @@ def run_rl_loop():
     """
     RL loop:
       for i in iterations:
-        1) self_play -> produces rl_shard_*.pt in RL_BUFFER_DIR
+        1) self_play -> produces rl shards in RL_BUFFER_DIR
         2) train_rl  -> updates latest model checkpoint(s)
         3) evaluate_and_promote -> may copy latest -> best if threshold met
+
+    Option 8 prompts for the full set of self-play knobs + debug toggle + eval sims.
     """
+    import inspect
+
     log("=== RL LOOP SETUP ===")
+
     iterations = _read_int("Iterations", 10)
+
+    # Self-play settings
     games_per_iter = _read_int("Self-play games per iteration", 50)
     simulations = _read_int("MCTS simulations per move (self-play)", 200)
     shard_size = _read_int("RL shard size (positions)", 10_000)
     self_play_workers = _read_int("Self-play workers (processes)", 1)
     mcts_batch_size = _read_int("MCTS inference batch size", 32)
+    temperature_moves = _read_int("Temperature moves (self-play)", 20)
+    initial_temperature = _read_float("Initial temperature (self-play)", 1.25)
+    max_moves = _read_int("Max moves per game (self-play)", 512)
+    infer_max_batch = _read_int("Inference server max batch", 128)
+    infer_wait_ms = _read_int("Inference server max wait (ms)", 2)
 
+    # Debug artifacts toggle
+    dbg = input("Debug artifacts (extra PGNs / shard summaries)? [y/N]: ").strip().lower()
+    debug = dbg in ("y", "yes", "1", "true")
+
+    # Promotion / evaluation settings
     do_promo = input("Run promotion after each iteration? [Y/n]: ").strip().lower()
     do_promo = (do_promo != "n")
 
     promo_games = _read_int("Promotion match games", 50) if do_promo else 0
     promo_threshold = _read_float("Promotion threshold (latest winrate)", 0.55) if do_promo else 0.0
+    promo_eval_sims = _read_int("MCTS simulations per move (promotion eval)", simulations) if do_promo else 0
 
     gen = _ensure_generation_initialized()
     log(f"=== RL LOOP START (generation={gen}) ===")
+
     t0 = time.time()
 
     for it in range(1, iterations + 1):
         log(f"--- Iteration {it}/{iterations}: self-play (gen={gen}) ---")
-        self_play(
+
+        # Call self_play with only the kwargs that exist (keeps compatibility across versions).
+        sp_kwargs = dict(
             num_games=games_per_iter,
             simulations=simulations,
             shard_size=shard_size,
             workers=self_play_workers,
             mcts_batch_size=mcts_batch_size,
+            temperature_moves=temperature_moves,
+            initial_temperature=initial_temperature,
+            max_moves=max_moves,
+            infer_max_batch=infer_max_batch,
+            infer_wait_ms=infer_wait_ms,
             generation=gen,
             loop_iteration=it,
             max_iterations=iterations,
+            debug=debug,
         )
+        sp_sig = inspect.signature(self_play)
+        sp_kwargs = {k: v for k, v in sp_kwargs.items() if k in sp_sig.parameters}
+        self_play(**sp_kwargs)
 
         log(f"--- Iteration {it}/{iterations}: train_rl ---")
         train_rl()
 
         if do_promo:
             log(f"--- Iteration {it}/{iterations}: evaluate & promote ---")
-            promo = evaluate_and_promote(
+
+            promo_kwargs = dict(
                 num_games=promo_games,
                 threshold=promo_threshold,
-                simulations=simulations,
+                simulations=promo_eval_sims,
                 loop_iteration=it,
                 max_iterations=iterations,
                 selfplay_sims=simulations,
             )
+            promo_sig = inspect.signature(evaluate_and_promote)
+            promo_kwargs = {k: v for k, v in promo_kwargs.items() if k in promo_sig.parameters}
+            promo = evaluate_and_promote(**promo_kwargs)
 
+            # If promoted, bump generation and archive the new best.
             if promo.get("promoted", False):
                 gen += 1
                 write_generation(GENERATION_PATH, gen)
@@ -324,7 +370,6 @@ def run_rl_loop():
         log(f"Iteration {it} complete. Total elapsed: {elapsed:.1f}s")
 
     log("=== RL LOOP DONE ===")
-
 
 def main_menu():
     while True:

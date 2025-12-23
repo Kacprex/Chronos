@@ -1,0 +1,105 @@
+{
+  "shard": "RL_Shard_0_20251223_222353_1_9.pt",
+  "generation": 0,
+  "loop_iteration": 1,
+  "samples": 1566,
+  "games": 20,
+  "samples_per_game_top10": [
+    {
+      "game_id": 18,
+      "samples": 116
+    },
+    {
+      "game_id": 14,
+      "samples": 112
+    },
+    {
+      "game_id": 17,
+      "samples": 108
+    },
+    {
+      "game_id": 6,
+      "samples": 107
+    },
+    {
+      "game_id": 7,
+      "samples": 99
+    },
+    {
+      "game_id": 13,
+      "samples": 97
+    },
+    {
+      "game_id": 4,
+      "samples": 92
+    },
+    {
+      "game_id": 15,
+      "samples": 92
+    },
+    {
+      "game_id": 8,
+      "samples": 90
+    },
+    {
+      "game_id": 19,
+      "samples": 72
+    }
+  ],
+  "unique_openings": 20,
+  "opening_collision_ratio": 0.05,
+  "top_openings_top10": [
+    {
+      "opening": "g1h3 g1h3 g8h6 g8h6 b1c3 b1c3 h6g8 h6g8",
+      "games": 1
+    },
+    {
+      "opening": "b2b3 b2b3 b7b5 b7b5 c2c4 c2c4 c7c5 c7c5",
+      "games": 1
+    },
+    {
+      "opening": "d2d4 d2d4 c7c6 c7c6 h2h3 h2h3 e7e6 e7e6",
+      "games": 1
+    },
+    {
+      "opening": "e2e4 e2e4 f7f6 f7f6 c2c4 c2c4 b7b5 b7b5",
+      "games": 1
+    },
+    {
+      "opening": "e2e4 e2e4 a7a6 a7a6 d1f3 d1f3 a8a7 a8a7",
+      "games": 1
+    },
+    {
+      "opening": "g2g4 g2g4 g7g6 g7g6 d2d4 d2d4 e7e6 e7e6",
+      "games": 1
+    },
+    {
+      "opening": "c2c4 c2c4 f7f6 f7f6 f2f3 f2f3 d7d5 d7d5",
+      "games": 1
+    },
+    {
+      "opening": "a2a3 a2a3 f7f6 f7f6 e2e4 e2e4 b8a6 b8a6",
+      "games": 1
+    },
+    {
+      "opening": "b1c3 b1c3 g7g5 g7g5 b2b4 b2b4 a7a5 a7a5",
+      "games": 1
+    },
+    {
+      "opening": "e2e3 e2e3 b7b6 b7b6 c2c4 c2c4 f7f6 f7f6",
+      "games": 1
+    }
+  ],
+  "results": {
+    "1-0": 6,
+    "0-1": 0,
+    "1/2-1/2": 14,
+    "*": 0
+  },
+  "plies": {
+    "min": 74,
+    "max": 232,
+    "avg": 156.6
+  },
+  "created_local": "2025-12-23T22:23:54"
+}

@@ -1,0 +1,205 @@
+[Event "Promotion"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "Latest"]
+[Black "Best"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Game "1"]
+[LatestAs "White"]
+[Sims "200"]
+
+1. e3 e6 2. Qg4 Ba3 3. Qxg7 h6 4. Nxa3 f6 5. Nb1 Rh7 6. Qh8 Kf7 7. Ba6 Rxh8 8.
+Bf1 Rh7 9. Bb5 Rh8 10. Bxd7 Qe8 11. Bxe8+ Kg7 12. Bh5 Kf8 13. Bf7 Kg7 14. Bxg8
+Kf8 15. Nc3 e5 16. Nb1 Bh3 17. Nxh3 h5 18. Ng1 Na6 19. Be6 Kg7 20. Bc8 Kf8 21.
+Nc3 Rb8 22. Nce2 Nb4 23. Nd4 exd4 24. exd4 Nc6 25. d5 Nb4 26. d6 Nc6 27. dxc7
+Nb4 28. cxb8=Q Ke7 29. Qa8 Nc6 30. Qb8 Na5 31. Qa8 Rg8 32. Qb8 Rf8 33. Qa8 Rh8
+34. Qb8 Rg8 35. Qa8 Rf8 36. Qb8 Rh8 37. Qa8 Rg8 38. Qb8 1/2-1/2
+
+[Event "Promotion"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "Best"]
+[Black "Latest"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Game "2"]
+[LatestAs "Black"]
+[Sims "200"]
+
+1. e3 d5 2. Bb5+ Bd7 3. Bd3 Qc8 4. Nc3 f6 5. Nh3 Nh6 6. f4 Nf5 7. Qg4 Nh4 8.
+Bb5 Nc6 9. Qf3 Nxf3+ 10. Kf2 Bxh3 11. gxf3 Bf1 12. Rxf1 d4 13. Bxc6+ Kd8 14.
+exd4 bxc6 15. Ne2 e5 16. dxe5 fxe5 17. fxe5 Qa6 18. Nd4 Rb8 19. Nxc6+ Ke8 20.
+Nxb8 Qd6 21. exd6 cxd6 22. Na6 Kd7 23. Nb4 Ke7 24. Nd3 Rg8 25. Nf4 Kd7 26. Nd5
+Kc6 27. Nf4 d5 28. Nxd5 Kb5 29. Nf4 Ka5 30. Nd5 Kb5 31. Nf4 Ka5 32. Nd5 1/2-1/2
+
+[Event "Promotion"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "Latest"]
+[Black "Best"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Game "3"]
+[LatestAs "White"]
+[Sims "200"]
+
+1. e3 e6 2. Qg4 Ba3 3. Qxg7 h6 4. Nxa3 f6 5. Nb1 Rh7 6. Qh8 Kf7 7. Ba6 Rxh8 8.
+Bf1 Rh7 9. Bb5 Rh8 10. Bxd7 Qe8 11. Bxe8+ Kg7 12. Bh5 Kf8 13. Bf7 Kg7 14. Bxg8
+Kf8 15. Nc3 e5 16. Nb1 Bh3 17. Nxh3 h5 18. Ng1 Na6 19. Be6 Kg7 20. Bc8 Kf8 21.
+Nc3 Rb8 22. Nce2 Nb4 23. Nd4 exd4 24. exd4 Nc6 25. d5 Nb4 26. d6 Nc6 27. dxc7
+Nb4 28. cxb8=Q Ke7 29. Qa8 Nc6 30. Qb8 Na5 31. Qa8 Rg8 32. Qb8 Rf8 33. Qa8 Rh8
+34. Qb8 Rg8 35. Qa8 Rf8 36. Qb8 Rh8 37. Qa8 Rg8 38. Qb8 1/2-1/2
+
+[Event "Promotion"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "Best"]
+[Black "Latest"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Game "4"]
+[LatestAs "Black"]
+[Sims "200"]
+
+1. e3 d5 2. Bb5+ Bd7 3. Bd3 Qc8 4. Nc3 f6 5. Nh3 Nh6 6. f4 Nf5 7. Qg4 Nh4 8.
+Bb5 Nc6 9. Qf3 Nxf3+ 10. Kf2 Bxh3 11. gxf3 Bf1 12. Rxf1 d4 13. Bxc6+ Kd8 14.
+exd4 bxc6 15. Ne2 e5 16. dxe5 fxe5 17. fxe5 Qa6 18. Nd4 Rb8 19. Nxc6+ Ke8 20.
+Nxb8 Qd6 21. exd6 cxd6 22. Na6 Kd7 23. Nb4 Ke7 24. Nd3 Rg8 25. Nf4 Kd7 26. Nd5
+Kc6 27. Nf4 d5 28. Nxd5 Kb5 29. Nf4 Ka5 30. Nd5 Kb5 31. Nf4 Ka5 32. Nd5 1/2-1/2
+
+[Event "Promotion"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "Latest"]
+[Black "Best"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Game "5"]
+[LatestAs "White"]
+[Sims "200"]
+
+1. e3 e6 2. Qg4 Ba3 3. Qxg7 h6 4. Nxa3 f6 5. Nb1 Rh7 6. Qh8 Kf7 7. Ba6 Rxh8 8.
+Bf1 Rh7 9. Bb5 Rh8 10. Bxd7 Qe8 11. Bxe8+ Kg7 12. Bh5 Kf8 13. Bf7 Kg7 14. Bxg8
+Kf8 15. Nc3 e5 16. Nb1 Bh3 17. Nxh3 h5 18. Ng1 Na6 19. Be6 Kg7 20. Bc8 Kf8 21.
+Nc3 Rb8 22. Nce2 Nb4 23. Nd4 exd4 24. exd4 Nc6 25. d5 Nb4 26. d6 Nc6 27. dxc7
+Nb4 28. cxb8=Q Ke7 29. Qa8 Nc6 30. Qb8 Na5 31. Qa8 Rg8 32. Qb8 Rf8 33. Qa8 Rh8
+34. Qb8 Rg8 35. Qa8 Rf8 36. Qb8 Rh8 37. Qa8 Rg8 38. Qb8 1/2-1/2
+
+[Event "Promotion"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "Best"]
+[Black "Latest"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Game "6"]
+[LatestAs "Black"]
+[Sims "200"]
+
+1. e3 d5 2. Bb5+ Bd7 3. Bd3 Qc8 4. Nc3 f6 5. Nh3 Nh6 6. f4 Nf5 7. Qg4 Nh4 8.
+Bb5 Nc6 9. Qf3 Nxf3+ 10. Kf2 Bxh3 11. gxf3 Bf1 12. Rxf1 d4 13. Bxc6+ Kd8 14.
+exd4 bxc6 15. Ne2 e5 16. dxe5 fxe5 17. fxe5 Qa6 18. Nd4 Rb8 19. Nxc6+ Ke8 20.
+Nxb8 Qd6 21. exd6 cxd6 22. Na6 Kd7 23. Nb4 Ke7 24. Nd3 Rg8 25. Nf4 Kd7 26. Nd5
+Kc6 27. Nf4 d5 28. Nxd5 Kb5 29. Nf4 Ka5 30. Nd5 Kb5 31. Nf4 Ka5 32. Nd5 1/2-1/2
+
+[Event "Promotion"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "Latest"]
+[Black "Best"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Game "7"]
+[LatestAs "White"]
+[Sims "200"]
+
+1. e3 e6 2. Qg4 Ba3 3. Qxg7 h6 4. Nxa3 f6 5. Nb1 Rh7 6. Qh8 Kf7 7. Ba6 Rxh8 8.
+Bf1 Rh7 9. Bb5 Rh8 10. Bxd7 Qe8 11. Bxe8+ Kg7 12. Bh5 Kf8 13. Bf7 Kg7 14. Bxg8
+Kf8 15. Nc3 e5 16. Nb1 Bh3 17. Nxh3 h5 18. Ng1 Na6 19. Be6 Kg7 20. Bc8 Kf8 21.
+Nc3 Rb8 22. Nce2 Nb4 23. Nd4 exd4 24. exd4 Nc6 25. d5 Nb4 26. d6 Nc6 27. dxc7
+Nb4 28. cxb8=Q Ke7 29. Qa8 Nc6 30. Qb8 Na5 31. Qa8 Rg8 32. Qb8 Rf8 33. Qa8 Rh8
+34. Qb8 Rg8 35. Qa8 Rf8 36. Qb8 Rh8 37. Qa8 Rg8 38. Qb8 1/2-1/2
+
+[Event "Promotion"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "Best"]
+[Black "Latest"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Game "8"]
+[LatestAs "Black"]
+[Sims "200"]
+
+1. e3 d5 2. Bb5+ Bd7 3. Bd3 Qc8 4. Nc3 f6 5. Nh3 Nh6 6. f4 Nf5 7. Qg4 Nh4 8.
+Bb5 Nc6 9. Qf3 Nxf3+ 10. Kf2 Bxh3 11. gxf3 Bf1 12. Rxf1 d4 13. Bxc6+ Kd8 14.
+exd4 bxc6 15. Ne2 e5 16. dxe5 fxe5 17. fxe5 Qa6 18. Nd4 Rb8 19. Nxc6+ Ke8 20.
+Nxb8 Qd6 21. exd6 cxd6 22. Na6 Kd7 23. Nb4 Ke7 24. Nd3 Rg8 25. Nf4 Kd7 26. Nd5
+Kc6 27. Nf4 d5 28. Nxd5 Kb5 29. Nf4 Ka5 30. Nd5 Kb5 31. Nf4 Ka5 32. Nd5 1/2-1/2
+
+[Event "Promotion"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "Latest"]
+[Black "Best"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Game "9"]
+[LatestAs "White"]
+[Sims "200"]
+
+1. e3 e6 2. Qg4 Ba3 3. Qxg7 h6 4. Nxa3 f6 5. Nb1 Rh7 6. Qh8 Kf7 7. Ba6 Rxh8 8.
+Bf1 Rh7 9. Bb5 Rh8 10. Bxd7 Qe8 11. Bxe8+ Kg7 12. Bh5 Kf8 13. Bf7 Kg7 14. Bxg8
+Kf8 15. Nc3 e5 16. Nb1 Bh3 17. Nxh3 h5 18. Ng1 Na6 19. Be6 Kg7 20. Bc8 Kf8 21.
+Nc3 Rb8 22. Nce2 Nb4 23. Nd4 exd4 24. exd4 Nc6 25. d5 Nb4 26. d6 Nc6 27. dxc7
+Nb4 28. cxb8=Q Ke7 29. Qa8 Nc6 30. Qb8 Na5 31. Qa8 Rg8 32. Qb8 Rf8 33. Qa8 Rh8
+34. Qb8 Rg8 35. Qa8 Rf8 36. Qb8 Rh8 37. Qa8 Rg8 38. Qb8 1/2-1/2
+
+[Event "Promotion"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "Best"]
+[Black "Latest"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Game "10"]
+[LatestAs "Black"]
+[Sims "200"]
+
+1. e3 d5 2. Bb5+ Bd7 3. Bd3 Qc8 4. Nc3 f6 5. Nh3 Nh6 6. f4 Nf5 7. Qg4 Nh4 8.
+Bb5 Nc6 9. Qf3 Nxf3+ 10. Kf2 Bxh3 11. gxf3 Bf1 12. Rxf1 d4 13. Bxc6+ Kd8 14.
+exd4 bxc6 15. Ne2 e5 16. dxe5 fxe5 17. fxe5 Qa6 18. Nd4 Rb8 19. Nxc6+ Ke8 20.
+Nxb8 Qd6 21. exd6 cxd6 22. Na6 Kd7 23. Nb4 Ke7 24. Nd3 Rg8 25. Nf4 Kd7 26. Nd5
+Kc6 27. Nf4 d5 28. Nxd5 Kb5 29. Nf4 Ka5 30. Nd5 Kb5 31. Nf4 Ka5 32. Nd5 1/2-1/2
+

@@ -1,0 +1,105 @@
+{
+  "shard": "RL_Shard_0_20251223_234333_1_24.pt",
+  "generation": 0,
+  "loop_iteration": 1,
+  "samples": 1627,
+  "games": 20,
+  "samples_per_game_top10": [
+    {
+      "game_id": 3000009,
+      "samples": 176
+    },
+    {
+      "game_id": 3000017,
+      "samples": 149
+    },
+    {
+      "game_id": 3000010,
+      "samples": 137
+    },
+    {
+      "game_id": 3000004,
+      "samples": 101
+    },
+    {
+      "game_id": 3000005,
+      "samples": 95
+    },
+    {
+      "game_id": 3000007,
+      "samples": 93
+    },
+    {
+      "game_id": 3000002,
+      "samples": 85
+    },
+    {
+      "game_id": 3000003,
+      "samples": 85
+    },
+    {
+      "game_id": 3000008,
+      "samples": 80
+    },
+    {
+      "game_id": 3000011,
+      "samples": 80
+    }
+  ],
+  "unique_openings": 20,
+  "opening_collision_ratio": 0.05,
+  "top_openings_top10": [
+    {
+      "opening": "c2c3 b7b5 g1h3 a7a6 c3c4 c8b7 e2e3 h7h5",
+      "games": 1
+    },
+    {
+      "opening": "e2e4 f7f6 f1b5 b8c6 b5c6 a7a5 e4e5 b7c6",
+      "games": 1
+    },
+    {
+      "opening": "b2b3 h7h6 c2c4 f7f5 g1h3 g7g6 h1g1 b8a6",
+      "games": 1
+    },
+    {
+      "opening": "e2e4 e7e6 f2f4 c7c5 e1e2 f7f5 d1e1 a7a5",
+      "games": 1
+    },
+    {
+      "opening": "h2h3 d7d6 g2g3 c8e6 a2a4 b8d7 f2f3 d7f6",
+      "games": 1
+    },
+    {
+      "opening": "c2c4 h7h5 f2f4 g7g5 e2e4 c7c6 b1c3 h8h7",
+      "games": 1
+    },
+    {
+      "opening": "g2g4 c7c6 b1c3 g7g5 c3a4 f8h6 d2d3 b8a6",
+      "games": 1
+    },
+    {
+      "opening": "b2b4 g7g6 b1c3 e7e5 g2g4 c7c5 b4b5 g6g5",
+      "games": 1
+    },
+    {
+      "opening": "g2g4 c7c5 d2d3 b7b6 c2c3 f7f6 d1d2 d8c7",
+      "games": 1
+    },
+    {
+      "opening": "c2c3 e7e6 b2b3 c7c6 f2f4 f8c5 g1f3 b7b6",
+      "games": 1
+    }
+  ],
+  "results": {
+    "1-0": 7,
+    "0-1": 0,
+    "1/2-1/2": 13,
+    "*": 0
+  },
+  "plies": {
+    "min": 41,
+    "max": 176,
+    "avg": 81.35
+  },
+  "created_local": "2025-12-23T23:43:34"
+}

@@ -1,0 +1,105 @@
+{
+  "shard": "RL_Shard_0_20251223_234331_1_21.pt",
+  "generation": 0,
+  "loop_iteration": 1,
+  "samples": 1570,
+  "games": 20,
+  "samples_per_game_top10": [
+    {
+      "game_id": 4000013,
+      "samples": 128
+    },
+    {
+      "game_id": 4000006,
+      "samples": 119
+    },
+    {
+      "game_id": 4000005,
+      "samples": 105
+    },
+    {
+      "game_id": 4000020,
+      "samples": 105
+    },
+    {
+      "game_id": 4000017,
+      "samples": 95
+    },
+    {
+      "game_id": 4000004,
+      "samples": 91
+    },
+    {
+      "game_id": 4000010,
+      "samples": 86
+    },
+    {
+      "game_id": 4000011,
+      "samples": 86
+    },
+    {
+      "game_id": 4000008,
+      "samples": 83
+    },
+    {
+      "game_id": 4000001,
+      "samples": 81
+    }
+  ],
+  "unique_openings": 20,
+  "opening_collision_ratio": 0.05,
+  "top_openings_top10": [
+    {
+      "opening": "f2f4 h7h5 b1a3 e7e6 a3c4 f8b4 h2h4 b4d2",
+      "games": 1
+    },
+    {
+      "opening": "a2a4 g8h6 b2b4 f7f5 g2g3 h6g8 h2h4 g8h6",
+      "games": 1
+    },
+    {
+      "opening": "d2d4 b7b5 b2b3 c7c5 c1g5 a7a5 b1d2 f7f5",
+      "games": 1
+    },
+    {
+      "opening": "e2e4 b7b5 e1e2 e7e5 g1f3 d7d5 h2h3 g8f6",
+      "games": 1
+    },
+    {
+      "opening": "b2b4 b8c6 g1h3 a7a5 f2f3 g8h6 f3f4 a8b8",
+      "games": 1
+    },
+    {
+      "opening": "a2a3 g8f6 d2d3 b8c6 e2e3 e7e5 f2f4 f8d6",
+      "games": 1
+    },
+    {
+      "opening": "e2e4 h7h6 d1g4 b7b5 f1c4 b8a6 b2b3 h8h7",
+      "games": 1
+    },
+    {
+      "opening": "b2b4 a7a6 b1c3 g8h6 b4b5 a8a7 c1a3 e7e5",
+      "games": 1
+    },
+    {
+      "opening": "g1f3 f7f6 h2h4 a7a6 b1c3 e7e5 d2d4 f8a3",
+      "games": 1
+    },
+    {
+      "opening": "d2d4 b7b6 g2g4 c7c5 c1h6 b8c6 e1d2 a7a5",
+      "games": 1
+    }
+  ],
+  "results": {
+    "1-0": 7,
+    "0-1": 0,
+    "1/2-1/2": 13,
+    "*": 0
+  },
+  "plies": {
+    "min": 31,
+    "max": 128,
+    "avg": 78.5
+  },
+  "created_local": "2025-12-23T23:43:32"
+}

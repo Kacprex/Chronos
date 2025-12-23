@@ -1,0 +1,105 @@
+{
+  "shard": "RL_Shard_0_20251223_222407_1_12.pt",
+  "generation": 0,
+  "loop_iteration": 1,
+  "samples": 1869,
+  "games": 20,
+  "samples_per_game_top10": [
+    {
+      "game_id": 2000014,
+      "samples": 182
+    },
+    {
+      "game_id": 2000013,
+      "samples": 127
+    },
+    {
+      "game_id": 2000017,
+      "samples": 126
+    },
+    {
+      "game_id": 2000005,
+      "samples": 120
+    },
+    {
+      "game_id": 2000016,
+      "samples": 113
+    },
+    {
+      "game_id": 2000012,
+      "samples": 111
+    },
+    {
+      "game_id": 2000006,
+      "samples": 109
+    },
+    {
+      "game_id": 2000008,
+      "samples": 109
+    },
+    {
+      "game_id": 2000001,
+      "samples": 108
+    },
+    {
+      "game_id": 2000007,
+      "samples": 91
+    }
+  ],
+  "unique_openings": 20,
+  "opening_collision_ratio": 0.05,
+  "top_openings_top10": [
+    {
+      "opening": "f2f4 f2f4 c7c6 c7c6 g2g4 g2g4 g8h6 g8h6",
+      "games": 1
+    },
+    {
+      "opening": "g1f3 g1f3 g7g5 g7g5 g2g4 g2g4 f7f5 f7f5",
+      "games": 1
+    },
+    {
+      "opening": "e2e4 e2e4 d7d6 d7d6 f1a6 f1a6 g7g6 g7g6",
+      "games": 1
+    },
+    {
+      "opening": "g1h3 g1h3 b7b5 b7b5 f2f3 f2f3 c8b7 c8b7",
+      "games": 1
+    },
+    {
+      "opening": "e2e3 e2e3 b7b5 b7b5 d1g4 d1g4 g7g5 g7g5",
+      "games": 1
+    },
+    {
+      "opening": "b2b4 b2b4 h7h6 h7h6 a2a3 a2a3 h6h5 h6h5",
+      "games": 1
+    },
+    {
+      "opening": "h2h3 h2h3 g8f6 g8f6 g2g4 g2g4 h8g8 h8g8",
+      "games": 1
+    },
+    {
+      "opening": "e2e4 e2e4 h7h5 h7h5 d2d4 d2d4 c7c5 c7c5",
+      "games": 1
+    },
+    {
+      "opening": "g1f3 g1f3 b8c6 b8c6 d2d4 d2d4 c6d4 c6d4",
+      "games": 1
+    },
+    {
+      "opening": "f2f3 f2f3 h7h5 h7h5 e2e3 e2e3 a7a6 a7a6",
+      "games": 1
+    }
+  ],
+  "results": {
+    "1-0": 5,
+    "0-1": 0,
+    "1/2-1/2": 15,
+    "*": 0
+  },
+  "plies": {
+    "min": 82,
+    "max": 364,
+    "avg": 186.9
+  },
+  "created_local": "2025-12-23T22:24:08"
+}

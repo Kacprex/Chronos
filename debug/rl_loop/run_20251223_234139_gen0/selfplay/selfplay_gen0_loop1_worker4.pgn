@@ -1,0 +1,393 @@
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1-0"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "4"]
+
+1. f4 h5 2. Na3 e6 3. Nc4 Bb4 4. h4 Bxd2+ 5. Qxd2 Ke7 6. f5 b5 7. f6+ Nxf6 8.
+Qd5 Na6 9. Qxa8 Ng8 10. Qd5 Rh6 11. Qa8 Kf6 12. Bf4 Qf8 13. Bxh6 Nc5 14. Bc1 b4
+15. Bf4 Qd8 16. Qxc8 Nb3 17. Qa8 Qxa8 18. Bxc7 a6 19. cxb3 Qf3 20. Bh2 Ke7 21.
+Nxf3 Nf6 22. Na5 Ng4 23. Nc6+ Kf8 24. Nd8 Ne3 25. Nb7 Ng4 26. Nc5 Ne3 27. Nxa6
+Ng4 28. Ne5 Ne3 29. g4 Nxg4 30. Nxg4 hxg4 31. Bg2 g3 32. Bxg3 d6 33. O-O g6 34.
+Rac1 g5 35. Rc6 gxh4 36. Rc7 hxg3 37. Rc8+ Ke7 38. Rc7+ Kf8 39. Rc8+ Ke7 40.
+Bd5 e5 41. Rxf7# 1-0
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1-0"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "4"]
+
+1. a4 Nh6 2. b4 f5 3. g3 Ng8 4. h4 Nh6 5. e4 b5 6. Qf3 a5 7. Qg4 bxa4 8. Bd3
+Ra6 9. Bb5 g5 10. Qxf5 Rd6 11. Qxh7 Nc6 12. Qxh8 Nb8 13. Qg7 Ng8 14. Qxg8 Ba6
+15. Bc4 gxh4 16. Qf7# 1-0
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1-0"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "4"]
+
+1. d4 b5 2. b3 c5 3. Bg5 a5 4. Nd2 f5 5. Ndf3 h6 6. Bc1 Ra6 7. Nh3 c4 8. Rg1
+cxb3 9. e4 d6 10. Bb2 bxc2 11. exf5 g6 12. fxg6 b4 13. Bxa6 Bxa6 14. Qxc2 e6
+15. Qc7 e5 16. Qf7# 1-0
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1-0"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "4"]
+
+1. e4 b5 2. Ke2 e5 3. Nf3 d5 4. h3 Nf6 5. Qe1 Qd7 6. Ng5 c6 7. Na3 a5 8. g3 Ng8
+9. Qd1 Qd8 10. Rb1 c5 11. Nxb5 d4 12. Na3 Ba6+ 13. Kf3 Ra7 14. Bxa6 Ra8 15. Qf1
+Nc6 16. Qb5 Rb8 17. Qxb8 f6 18. Qa8 Nce7 19. Bf1 Nh6 20. Bb5+ Nc6 21. Nxh7 d3
+22. Ng5 fxg5 23. cxd3 Bd6 24. Bxc6+ Kf7 25. Qxd8 Ke6 26. Qxh8 g6 27. Qe8+ Kf6
+28. Qe6+ Kxe6 29. Ba8 Kd7 30. Nb5 Ng4 31. hxg4 a4 32. Rh8 Bf8 33. Rh1 c4 34.
+dxc4 a3 35. Nxa3 Bxa3 36. Rh8 Bxb2 37. Rh1 Kc7 38. Rh8 Kb6 39. Rh1 Ka5 40. Rh8
+Ba3 41. Bxa3 Ka6 42. Rbb8 Ka5 43. Bd5 Ka6 44. d3 Ka5 45. Bc5 Ka4 46. Ra8# 1-0
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "4"]
+
+1. b4 Nc6 2. Nh3 a5 3. f3 Nh6 4. f4 Rb8 5. a4 Rg8 6. Ba3 Ra8 7. b5 Ne5 8. e3
+Nf5 9. Ke2 Ng4 10. Bxe7 Ra7 11. Bxd8 c6 12. b6 Ng3+ 13. hxg3 h5 14. bxa7 Nf2
+15. Kxf2 Bd6 16. a8=Q c5 17. Qg4 b5 18. axb5 Bb7 19. Qe6+ fxe6 20. Bxa5+ Bxa8
+21. Ng1 h4 22. Rxh4 Bb8 23. Rh8 Kf7 24. Rh1 c4 25. Bxc4 d5 26. b6 d4 27. b7
+dxe3+ 28. Kxe3 Rd8 29. bxa8=Q Rd7 30. Rh8 Re7 31. Qa7 Rc7 32. Qxc7+ Bxc7 33.
+Rh1 Bb6+ 34. Ke4 Bxa5 35. Rxa5 Ke7 36. Rh6 Ke8 37. f5 g6 38. Rh8+ Kd7 39. Rd8+
+Kxd8 40. fxg6 e5 41. g7 Ke7 42. g8=Q Kd6 43. Qg6+ Kc7 44. Qc6+ Kxc6 45. Ra6+
+Kc5 46. Kxe5 Kb4 47. Bb5 Kxb5 48. Ra7 Kb4 49. Ra8 Kb5 50. Rb8+ Ka4 51. Ra8+ Kb5
+52. Rb8+ Ka4 53. Ra8+ 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "4"]
+
+1. a3 Nf6 2. d3 Nc6 3. e3 e5 4. f4 Bd6 5. g4 Ne7 6. Nc3 Bxa3 7. f5 d5 8. h3 h5
+9. Nb1 Nd7 10. c4 O-O 11. Nxa3 hxg4 12. hxg4 b6 13. Rh8+ Kxh8 14. cxd5 a5 15.
+Bd2 Nc6 16. dxc6 Rg8 17. cxd7 Qe8 18. dxe8=Q b5 19. Qxb5 Bxf5 20. Qda4 Rab8 21.
+Qe8 Rb4 22. Qxb4 Bd7 23. Qbe7 Rxe8 24. Qd8 c6 25. Nb1 Rxd8 26. Rxa5 Ra8 27.
+Rxa8+ Kh7 28. Ra2 Bc8 29. Ra8 Ba6 30. Rxa6 e4 31. dxe4 c5 32. Ra1 c4 33. Ra8 c3
+34. Nxc3 Kg6 35. Rb8 Kf6 36. Rh8 Ke6 37. Rh1 Kd6 38. Rh8 Kc5 39. Rh1 f6 40. Rh8
+f5 41. Rh1 fxe4 42. Rh6 g6 43. Rxg6 Kb4 44. Rg8 Kb3 45. Rh8 Kb4 46. Rh1 Kb3 47.
+g5 Kb4 48. g6 Kb3 49. g7 Kb4 50. g8=R Kb3 51. Rh4 Kb4 52. Rgh8 Kb3 53. Bd3 exd3
+54. Rh1 Kc2 55. R8h2 Kxb2 56. Rh8 Kb3 57. R8h2 Ka3 58. Rh8 Kb3 59. R8h2 Ka3 60.
+Rh8 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "4"]
+
+1. e4 h6 2. Qg4 b5 3. Bc4 Na6 4. b3 Rh7 5. a3 f6 6. Qxd7+ Kxd7 7. Bf1 b4 8. f4
+Ke8 9. c4 Qxd2+ 10. Bxd2 bxa3 11. Ba5 Bh3 12. Nxh3 a2 13. Ng1 axb1=Q+ 14. Kf2
+Nb8 15. Ra3 Qc2+ 16. Kf3 Qb2 17. Ra2 Kf7 18. Rxb2 Na6 19. Bc3 Ke8 20. Ba5 Nb8
+21. Bc3 Nd7 22. Ba5 Rb8 23. Bc3 Rh8 24. Ba5 Rb7 25. Bc3 Rb8 26. Ba5 Rb7 27. Bc3
+1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1-0"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "4"]
+
+1. b4 a6 2. Nc3 Nh6 3. b5 Ra7 4. Ba3 e5 5. e4 Rg8 6. Bxf8 Qe7 7. Nge2 f6 8. a3
+Qb4 9. Bd6 c6 10. Rg1 cxb5 11. Bxb8 Ra8 12. axb4 a5 13. bxa5 b4 14. Na2 d6 15.
+Nxb4 b5 16. a6 Bd7 17. a7 f5 18. exf5 Ke7 19. d4 exd4 20. Qxd4 Kf8 21. Qxd6+
+Ke8 22. Ng3 Bc8 23. Bxb5+ Kf7 24. Ba6 g5 25. Bc7 Rb8 26. axb8=Q g4 27. Qa8 Rh8
+28. Qb8 Rf8 29. Qa8 Rd8 30. Qb8 Re8+ 31. Qe6+ Kf8 32. Qa8 Ng8 33. Qb8 Ne7 34.
+Qa8 Ng8 35. Qxc8 Kg7 36. Qexe8 Kh6 37. Qe3+ Kg7 38. Qh6+ Kxh6 39. Qe6+ Kg5 40.
+Qe3+ Kh4 41. Rf1 Nh6 42. Qxh6# 1-0
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "4"]
+
+1. Nf3 f6 2. h4 a6 3. Nc3 e5 4. d4 Ba3 5. Rh2 c6 6. Bg5 e4 7. Bxf6 Qc7 8. bxa3
+b5 9. Be7 Nf6 10. Ne5 e3 11. Bd8 exf2+ 12. Kxf2 Ne4+ 13. Ke3 Qa5 14. Nxc6 Nxc3
+15. Qd3 Nxe2 16. Qxe2 Ra7 17. Nxb8 b4 18. Qxa6 bxa3 19. Qg6+ hxg6 20. Ba6 Qe5+
+21. Kd2 Ra8 22. d5 Qe7 23. Bxc8 Qxd8 24. Ba6 Rxb8 25. Re1+ Kf8 26. Bb5 Qe8 27.
+Rxe8+ Rxe8 28. d6 Re7 29. dxe7+ Kxe7 30. Bxd7 Kd6 31. Bc8 Kc7 32. Ba6 Kb6 33.
+Bb5 Ka5 34. Ba6 Kb6 35. Bb5 Ka5 36. Ba6 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "4"]
+
+1. d4 b6 2. g4 c5 3. Bh6 Nc6 4. Kd2 a5 5. a3 Nxh6 6. b4 b5 7. c4 f5 8. Nc3 cxb4
+9. axb4 Nxd4 10. cxb5 d5 11. bxa5 Nxb5 12. Nxb5 Bd7 13. Nc7+ Qxc7 14. Qa4 Qc8
+15. Qc6 Rb8 16. h4 e5 17. e3 d4 18. Qa8 dxe3+ 19. Kxe3 Rxa8 20. g5 f4+ 21. Kd2
+Rb8 22. gxh6 g6 23. Re1 Qd8 24. a6 Bb5+ 25. Bd3 Bxa6 26. Rxe5+ Qe7 27. Rxe7+
+Kxe7 28. Bxa6 Rb7 29. Bxb7 Rg8 30. Bc8 Rh8 31. Ba6 Rg8 32. Bb5 Kd6 33. Be8 Ke6
+34. Kc3 Rh8 35. Kb3 Kf5 36. Kc3 Ba3 37. Kb3 Ke4 38. Kxa3 Kf5 39. Kb3 Ke4 40.
+Bb5 Kf5 41. Ba6 Ke4 42. Bb5 Kf5 43. Be8 Ke4 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "4"]
+
+1. a4 g6 2. g4 f5 3. c3 h5 4. a5 fxg4 5. e4 Bh6 6. Qe2 c6 7. h4 Bxd2+ 8. Bxd2
+c5 9. Qa6 Nh6 10. Bg5 O-O 11. Qxg6+ Kh8 12. b4 cxb4 13. Qf6+ Rxf6 14. Bxf6+ Kh7
+15. Bh8 bxc3 16. Ba6 Qxa5 17. Rxa5 bxa6 18. Rg5 Nf7 19. Rg8 Nh6 20. Nxc3 Kxg8
+21. Nge2 Kf8 22. Rf1 a5 23. Nd1 Ba6 24. Ndc3 Ng8 25. Bf6 a4 26. Nxa4 d5 27.
+exd5 g3 28. Nac3 gxf2+ 29. Kxf2 Bd3 30. Bh8 Bxe2 31. Kxe2+ Ke8 32. Rf6 e6 33.
+Rf8+ Kd7 34. Rf1 exd5 35. Nxd5 Ne7 36. Nf4 Nd5 37. Nxd5 Ke6 38. Nf4+ Kd6 39.
+Nxh5 Ke6 40. Nf4+ Kd6 41. Nd5 Ke6 42. Nf4+ Kd6 43. Nd5 Ke6 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "4"]
+
+1. f3 Nf6 2. e3 h6 3. Na3 Ne4 4. d3 c6 5. c3 Nf6 6. Qa4 Rg8 7. g3 Na6 8. Bh3 h5
+9. b4 Nxb4 10. Be6 Qb6 11. cxb4 Qxb4+ 12. Kf2 Qa5 13. Bxf7+ Kd8 14. Bxg8 Qa6
+15. Qxa6 Nxg8 16. Nb1 b6 17. Qxc8+ Kxc8 18. Bd2 Nf6 19. Nc3 Ng4+ 20. Kg2 Nxe3+
+21. Bxe3 Rb8 22. Bxb6 axb6 23. Kf2 b5 24. Re1 b4 25. Nb1 b3 26. axb3 Rxb3 27.
+Nc3 Rb7 28. Ke3 Rb8 29. Kd2 e6 30. g4 hxg4 31. fxg4 Ba3 32. Nce2 Bd6 33. Nd4
+Ba3 34. Nb5 cxb5 35. g5 b4 36. Rb1 b3 37. Kc3 b2 38. Kc4 Bd6 39. Kc3 Ba3 40.
+Kc4 Bd6 41. Kc3 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "4"]
+
+1. d4 Nf6 2. Bd2 Ne4 3. f3 Nc6 4. e3 b5 5. Bd3 d5 6. g4 h6 7. c3 e5 8. Bxe4 Rh7
+9. Qc1 Ne7 10. g5 dxe4 11. gxh6 exf3 12. hxg7 exd4 13. gxf8=Q+ Kd7 14. Qh8 Rh3
+15. Ne2 a5 16. Qh4 fxe2 17. Rg1 Rxe3 18. Qh8 Ba6 19. Qc2 Rf3 20. Qd3 b4 21.
+Qxa6 bxc3 22. Qxa8 cxb2 23. Qhxd8+ Ke6 24. Qac8+ Nxc8 25. Qe7+ Kxe7 26. Bxa5
+Rf1+ 27. Kd2 d3 28. Nc3 b1=N+ 29. Kxd3 Rf5 30. Rgxb1 Na7 31. Kxe2 Rf6 32. Bxc7
+Re6+ 33. Kf2 Rf6+ 34. Kg2 Re6 35. Rb8 Kd7 36. Ra8 Re7 37. Rf1 Re4 38. Rxa7 Re8
+39. h4 Re7 40. Bd6+ Ke6 41. Ba3 Rxa7 42. Bf8 f6 43. Kf2 Rxa2+ 44. Nxa2 Kd5 45.
+h5 Ke4 46. h6 Kd3 47. h7 Kd2 48. h8=N Kd3 49. Nf7 Kd2 50. Ne5 fxe5 51. Bb4+ Kd3
+52. Ba5 e4 53. Bc3 e3+ 54. Kf3 e2 55. Bh8 Kd2 56. Ba1 e1=N+ 57. Kg4 Nf3 58.
+Kxf3 Kd3 59. Nc3 Kd2 60. Na4 Kd3 61. Nc5+ Kd2 62. Ne4+ Kd3 63. Nc5+ Kd2 64.
+Ne4+ Kd3 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1-0"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "4"]
+
+1. f3 c6 2. b4 a6 3. Nh3 c5 4. Rg1 Nc6 5. Na3 Qb6 6. Nc4 d5 7. Na5 Na7 8. Nb3
+f6 9. c3 Bxh3 10. f4 Kd8 11. bxc5 Bxg2 12. cxb6 e5 13. bxa7 exf4 14. Ba3 Rxa7
+15. Bxf8 b5 16. Bc5 h5 17. Bxa7 Rh7 18. Nc5 f5 19. Qa4 b4 20. Qd7# 1-0
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "4"]
+
+1. a4 f6 2. a5 Kf7 3. g4 b6 4. a6 Kg6 5. f4 h6 6. Na3 e6 7. Nb5 Ne7 8. e3 d5 9.
+Be2 Nf5 10. Na3 Bxa6 11. Bxa6 Nxa6 12. gxf5+ Kh7 13. fxe6 Bxa3 14. Rxa3 d4 15.
+Rxa6 dxe3 16. Qf3 exd2+ 17. Kf2 Qd3 18. cxd3 dxc1=R 19. Qh5 Kg8 20. e7 Rc5 21.
+e8=Q+ Rxe8 22. Qxc5 b5 23. Qxa7 Kf8 24. Qb8 Rxb8 25. Ra7 b4 26. Ra8 b3 27.
+Rxb8+ Ke7 28. Rb7 Kd6 29. Rxb3 Kc5 30. Rb6 Kd4 31. Rb7 Kxd3 32. Rxc7 Kd4 33.
+Rc8 Rh7 34. Rh8 Ke4 35. Rxh7 Kd3 36. Rh8 Ke4 37. Rh7 Kd3 38. Rh8 Ke4 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "4"]
+
+1. h3 d5 2. f4 e6 3. b4 Qg5 4. d3 Qxf4 5. Na3 Qh6 6. g4 Ke7 7. Rb1 a5 8. c3 Qg5
+9. Nb5 axb4 10. Bf4 bxc3 11. Nxc7 Ra7 12. Qa4 c2 13. Qxa7 Nh6 14. Qxb8 Nf5 15.
+Qxc8 Qxg4 16. Qa8 Rg8 17. Qb8 c1=R+ 18. Kf2 Rxb1 19. hxg4 Rd1 20. gxf5 h5 21.
+Qa8 Rxf1+ 22. Kg3 Rh8 23. Qb8 Re1 24. Qa8 Rf1 25. Qb8 Re1 26. Qa8 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1-0"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "4"]
+
+1. a4 Nc6 2. g3 Nb4 3. Nf3 Nc6 4. Bg2 h6 5. Ra2 a6 6. Ne5 Nb4 7. Ra1 Ra7 8. Be4
+h5 9. Nf3 b5 10. Ra3 Nc6 11. h4 a5 12. axb5 Ba6 13. bxa6 Ra8 14. Bxc6 Qc8 15.
+Bxa8 Qxa6 16. Ng1 Nh6 17. Bc6 f6 18. Ba8 Rg8 19. Nc3 Kf7 20. Na4 f5 21. Bf3 Qc8
+22. Bxh5+ Kf6 23. Bf7 Qa6 24. Ba2 e6 25. d3 Qb6 26. Nxb6 cxb6 27. Rc3 Ng4 28.
+Rc5 a4 29. Rxf5+ Ke7 30. Rc5 Kd6 31. Rh5 Be7 32. Rh8 Rf8 33. Bh6 Nxf2 34. Kd2
+Nxd1 35. Kxd1 a3 36. b3 Rf3 37. g4 g6 38. Bf8 Rf1+ 39. Kd2 Kc6 40. Bxe7 Kb5 41.
+Bxa3 Rc1 42. Ra8 Kc6 43. Kxc1 Kb5 44. h5 e5 45. hxg6 e4 46. g7 exd3 47. g8=Q
+dxe2 48. Qc4# 1-0
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "4"]
+
+1. g3 d5 2. c4 e6 3. Nf3 Nf6 4. d4 c5 5. b3 a6 6. Bd2 Ng8 7. Ne5 f6 8. Bg5 f5
+9. h3 cxd4 10. f3 Nf6 11. Bd2 g6 12. cxd5 exd5 13. Nc6 bxc6 14. Bc3 Qd7 15. Ba5
+Qd8 16. Bxd8 Rg8 17. Ba5 Ba3 18. Nxa3 Kd7 19. Bd8 Kxd8 20. Nb1 Rg7 21. Qc2 g5
+22. Qc5 d3 23. Qa7 dxe2 24. Qf7 Rg6 25. Kd2 Rg8 26. Rg1 exf1=N+ 27. Ke1 g4 28.
+Rxf1 gxf3 29. Qe7+ Kxe7 30. Rxf3 Rf8 31. Nc3 f4 32. Rxf4 Bxh3 33. Rf2 Bf1 34.
+Rh2 Ra7 35. Re2+ Kd8 36. Rh2 Bd3 37. Re2 Bc2 38. Rh2 Bd3 39. Re2 Bc2 40. Rh2
+1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "4"]
+
+1. a3 h5 2. c4 d5 3. Qb3 Rh6 4. Qd1 Rc6 5. Ra2 Re6 6. b4 g6 7. Nf3 Rc6 8. Ng1
+Nf6 9. d3 Ne4 10. Be3 Ra6 11. b5 c6 12. bxa6 e5 13. axb7 Qa5+ 14. Nd2 Nxd2 15.
+Bxd2 dxc4 16. Qb3 c3 17. bxc8=Q+ Ke7 18. Qb5 Qc7 19. Qbxb8 a6 20. Qxa8 Bg7 21.
+Be3 c5 22. Qd8+ Qxd8 23. Qxd8+ Kxd8 24. Bxc5 Bf8 25. Bxf8 c2 26. Kd2 f6 27.
+Rxc2 a5 28. Ra2 a4 29. Kc3 e4 30. dxe4 f5 31. exf5 gxf5 32. Bh6 f4 33. Bf8 f3
+34. Nxf3 Kc7 35. Bh6 Kb6 36. Bf8 Ka5 37. Bh6 Kb5 38. Bf8 Ka5 39. Bh6 Kb5 40.
+Bf8 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "4"]
+
+1. a3 c5 2. b3 Qc7 3. e4 Qc6 4. g3 Qb5 5. Bg2 Nf6 6. Bf3 Qe2+ 7. Bxe2 h5 8. h3
+c4 9. Nf3 g5 10. Nxg5 cxb3 11. Ne6 b2 12. Ng5 bxc1=B 13. Bc4 Bb2 14. Ba2 Nh7
+15. Bxf7+ Kd8 16. Ba2 Bc3 17. Qf3 Bb4 18. Qf7 Bxd2+ 19. Nxd2 e6 20. Nc4 Bd6 21.
+g4 Nxg5 22. Bb3 Nh7 23. h4 b5 24. Nb6 Bxa3 25. f4 hxg4 26. Nxa8 Be7 27. Nb6 a5
+28. Nxc8 Ba3 29. Nb6 Nf8 30. Rd1 Be7 31. Rxd7+ Nbxd7 32. Nc8 e5 33. Qh7 Nc5 34.
+Qxe7+ Kxc8 35. Qc7+ Kxc7 36. Ba4 exf4 37. Bxb5 g3 38. Be8 f3 39. Kd2 g2 40. Bb5
+g1=N 41. Rxg1 Nxe4+ 42. Kc1 f2 43. Rd1 Kb6 44. Ba6 Kxa6 45. Rd3 Ng3 46. Ra3 Nf1
+47. Rxa5+ Kb7 48. Ra7+ Kb6 49. Ra8 Kb7 50. Rb8+ Ka6 51. Ra8+ Kb7 52. Rb8+ Ka6
+53. Ra8+ 1/2-1/2
+

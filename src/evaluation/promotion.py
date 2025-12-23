@@ -2,6 +2,7 @@ import os
 import json
 import time
 import shutil
+from datetime import datetime
 
 import torch
 import chess
@@ -11,15 +12,27 @@ from src.config import BEST_MODEL_PATH, LATEST_MODEL_PATH
 from src.nn.network import ChessNet
 from src.mcts.mcts import MCTS
 from src.common.log import log
+from src.selfplay.encode_game import GameRecord
 
 
-def play_game(model_white, model_black, device, simulations=200, temp_moves=0, max_moves=512) -> float:
-    """Return 1.0 if white wins, 0.5 draw, 0.0 black wins."""
+def _play_game_with_record(
+    model_white,
+    model_black,
+    device,
+    simulations=200,
+    temp_moves=0,
+    max_moves=512,
+    *,
+    white_name: str = "White",
+    black_name: str = "Black",
+) -> tuple[float, GameRecord]:
+    """Play one game and return (white_score, GameRecord)."""
     board = chess.Board()
 
     mcts_white = MCTS(model_white, device=device, simulations=simulations)
     mcts_black = MCTS(model_black, device=device, simulations=simulations)
 
+    moves_uci: list[str] = []
     move_count = 0
     while not board.is_game_over(claim_draw=True) and move_count < max_moves:
         if board.turn == chess.WHITE:
@@ -37,16 +50,34 @@ def play_game(model_white, model_black, device, simulations=200, temp_moves=0, m
         else:
             chosen_move = moves[int(np.argmax(probs))]
 
+        moves_uci.append(chosen_move.uci())
         board.push(chosen_move)
         move_count += 1
 
     result = board.result(claim_draw=True)
     if result == "1-0":
-        return 1.0
+        score = 1.0
     elif result == "0-1":
-        return 0.0
+        score = 0.0
     else:
-        return 0.5
+        score = 0.5
+
+    rec = GameRecord(
+        moves_uci=moves_uci,
+        result=result,
+        white_name=str(white_name),
+        black_name=str(black_name),
+        event="Promotion",
+        site="Local",
+        mcts_sims=int(simulations),
+    )
+    return score, rec
+
+
+def play_game(model_white, model_black, device, simulations=200, temp_moves=0, max_moves=512) -> float:
+    """Return 1.0 if white wins, 0.5 draw, 0.0 black wins."""
+    s, _ = _play_game_with_record(model_white, model_black, device, simulations=simulations, temp_moves=temp_moves, max_moves=max_moves)
+    return float(s)
 
 
 def evaluate_and_promote(
@@ -60,6 +91,8 @@ def evaluate_and_promote(
     sf_rating_depth: int = 12,
     sf_rating_games: int = 20,
     sf_rating_sims: int | None = None,
+    generation: int = 0,
+    debug_dir: str | None = None,
 ):
     """
     Evaluate latest vs best via MCTS games.
@@ -108,16 +141,59 @@ def evaluate_and_promote(
     best_model.eval()
     latest_model.eval()
 
-    scores = []
+    scores: list[float] = []
+    promo_records: list[dict] = []
+    promo_pgn_path = None
+    if debug_dir:
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        promo_pgn_path = os.path.join(debug_dir, "promotion", f"promo_gen{int(generation)}_loop{int(loop_iteration)}_{stamp}.pgn")
+        os.makedirs(os.path.dirname(promo_pgn_path), exist_ok=True)
     start_time = time.time()
 
     for g in range(1, num_games + 1):
         # Alternate colors for fairness
         if g % 2 == 1:
-            score = play_game(latest_model, best_model, device, simulations=simulations)
+            score, rec = _play_game_with_record(
+                latest_model,
+                best_model,
+                device,
+                simulations=simulations,
+                white_name="Latest",
+                black_name="Best",
+            )
+            latest_as = "White"
         else:
-            score = 1.0 - play_game(best_model, latest_model, device, simulations=simulations)
-        scores.append(score)
+            # Score from latest perspective when latest is Black
+            s_white, rec = _play_game_with_record(
+                best_model,
+                latest_model,
+                device,
+                simulations=simulations,
+                white_name="Best",
+                black_name="Latest",
+            )
+            score = 1.0 - float(s_white)
+            latest_as = "Black"
+
+        scores.append(float(score))
+        promo_records.append({
+            "game": int(g),
+            "latest_as": latest_as,
+            "score_latest": float(score),
+            "result": rec.result,
+            "plies": int(len(rec.moves_uci)),
+        })
+        if promo_pgn_path:
+            # Tag the PGN with context for quick debugging
+            with open(promo_pgn_path, "a", encoding="utf-8") as f:
+                f.write(rec.to_pgn_string(extra_headers={
+                    "Generation": int(generation),
+                    "Loop": int(loop_iteration),
+                    "Game": int(g),
+                    "LatestAs": latest_as,
+                    "Sims": int(simulations),
+                }))
+                f.write("\n\n")
         avg = sum(scores) / len(scores)
         log(f"Game {g}/{num_games}, score={score:.2f}, avg={avg:.3f}")
 
@@ -137,6 +213,30 @@ def evaluate_and_promote(
         log(f"Latest model not strong enough. Keeping current best.")
 
     log(f"Promotion eval finished in {time.time() - start_time:.1f}s")
+
+    if debug_dir:
+        try:
+            out_summary = os.path.join(debug_dir, "promotion", f"promo_gen{int(generation)}_loop{int(loop_iteration)}_summary.json")
+            os.makedirs(os.path.dirname(out_summary), exist_ok=True)
+            with open(out_summary, "w", encoding="utf-8") as f:
+                json.dump(
+                    {
+                        "generation": int(generation),
+                        "loop_iteration": int(loop_iteration),
+                        "num_games": int(num_games),
+                        "simulations": int(simulations),
+                        "threshold": float(threshold),
+                        "winrate_latest": float(final_score),
+                        "promoted": bool(promoted),
+                        "games": promo_records,
+                        "pgn": promo_pgn_path,
+                        "created_local": datetime.now().isoformat(timespec="seconds"),
+                    },
+                    f,
+                    indent=2,
+                )
+        except Exception as e:
+            log(f"WARN: failed to write promo debug summary: {e}")
 
     # --- Discord: promotion log (always) ---
     if DISCORD_PROMOTION_WEBHOOK:

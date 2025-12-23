@@ -1,0 +1,105 @@
+{
+  "shard": "RL_Shard_0_20251223_222356_1_10.pt",
+  "generation": 0,
+  "loop_iteration": 1,
+  "samples": 1558,
+  "games": 20,
+  "samples_per_game_top10": [
+    {
+      "game_id": 4000006,
+      "samples": 131
+    },
+    {
+      "game_id": 4000005,
+      "samples": 109
+    },
+    {
+      "game_id": 4000003,
+      "samples": 101
+    },
+    {
+      "game_id": 4000008,
+      "samples": 95
+    },
+    {
+      "game_id": 4000016,
+      "samples": 93
+    },
+    {
+      "game_id": 4000001,
+      "samples": 89
+    },
+    {
+      "game_id": 4000002,
+      "samples": 89
+    },
+    {
+      "game_id": 4000013,
+      "samples": 89
+    },
+    {
+      "game_id": 4000012,
+      "samples": 87
+    },
+    {
+      "game_id": 4000009,
+      "samples": 77
+    }
+  ],
+  "unique_openings": 20,
+  "opening_collision_ratio": 0.05,
+  "top_openings_top10": [
+    {
+      "opening": "c2c3 c2c3 d7d6 d7d6 b2b4 b2b4 b8c6 b8c6",
+      "games": 1
+    },
+    {
+      "opening": "a2a3 a2a3 f7f5 f7f5 b2b4 b2b4 g7g6 g7g6",
+      "games": 1
+    },
+    {
+      "opening": "g1f3 g1f3 a7a5 a7a5 g2g3 g2g3 c7c6 c7c6",
+      "games": 1
+    },
+    {
+      "opening": "h2h3 h2h3 h7h6 h7h6 h1h2 h1h2 f7f6 f7f6",
+      "games": 1
+    },
+    {
+      "opening": "h2h4 h2h4 b8c6 b8c6 e2e3 e2e3 c6b4 c6b4",
+      "games": 1
+    },
+    {
+      "opening": "b2b3 b2b3 e7e6 e7e6 c1b2 c1b2 b7b5 b7b5",
+      "games": 1
+    },
+    {
+      "opening": "h2h3 h2h3 b7b5 b7b5 g2g3 g2g3 f7f6 f7f6",
+      "games": 1
+    },
+    {
+      "opening": "e2e3 e2e3 d7d6 d7d6 g2g4 g2g4 b7b5 b7b5",
+      "games": 1
+    },
+    {
+      "opening": "b1c3 b1c3 e7e5 e7e5 h2h3 h2h3 g7g6 g7g6",
+      "games": 1
+    },
+    {
+      "opening": "d2d3 d2d3 h7h6 h7h6 f2f3 f2f3 c7c5 c7c5",
+      "games": 1
+    }
+  ],
+  "results": {
+    "1-0": 12,
+    "0-1": 0,
+    "1/2-1/2": 8,
+    "*": 0
+  },
+  "plies": {
+    "min": 54,
+    "max": 262,
+    "avg": 155.8
+  },
+  "created_local": "2025-12-23T22:23:57"
+}

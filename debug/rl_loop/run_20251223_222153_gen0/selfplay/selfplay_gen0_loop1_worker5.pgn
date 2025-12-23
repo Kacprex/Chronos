@@ -1,0 +1,280 @@
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1-0"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "5"]
+
+1. f4 1-0
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1-0"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "5"]
+
+1. d3 1-0
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "5"]
+
+1. Nh3 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1-0"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "5"]
+
+1. Nc3 1-0
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1-0"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "5"]
+
+1. g4 1-0
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "5"]
+
+1. b3 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "5"]
+
+1. a3 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "5"]
+
+1. c3 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1-0"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "5"]
+
+1. Nh3 1-0
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "5"]
+
+1. h4 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "5"]
+
+1. a4 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "5"]
+
+1. g4 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "5"]
+
+1. a4 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "5"]
+
+1. g4 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "5"]
+
+1. h4 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "5"]
+
+1. d3 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "5"]
+
+1. h4 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "5"]
+
+1. e4 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "5"]
+
+1. d4 1/2-1/2
+
+[Event "SelfPlay"]
+[Site "Local"]
+[Date "2025.12.23"]
+[Round "-"]
+[White "SelfPlay-White"]
+[Black "SelfPlay-Black"]
+[Result "1/2-1/2"]
+[MCTS "200"]
+[Generation "0"]
+[Loop "1"]
+[Worker "5"]
+
+1. d3 1/2-1/2
+

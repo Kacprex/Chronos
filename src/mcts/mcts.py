@@ -319,7 +319,7 @@ class MCTS:
 
         for child in node.children.values():
             eff_visits = child.visits + child.virtual_visits
-            q = child.value
+            q = -child.value  # child.value is from child's (opponent) perspective
             u = (
                self.cpuct
                * child.prior
@@ -358,9 +358,18 @@ class MCTS:
             )
 
     def _terminal_value(self, board: chess.Board) -> float:
-        result = board.result()
+        """Terminal value from *side-to-move* perspective.
+
+        This must match the value head training target (z), which is defined
+        from the perspective of the player to move at the evaluated position.
+        """
+        result = board.result(claim_draw=True)
         if result == "1-0":
-            return 1.0
-        if result == "0-1":
-            return -1.0
-        return 0.0
+            z_white = 1.0
+        elif result == "0-1":
+            z_white = -1.0
+        else:
+            z_white = 0.0
+
+        # Convert to side-to-move perspective at this terminal node.
+        return z_white if board.turn == chess.WHITE else -z_white
