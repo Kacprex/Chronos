@@ -1,3 +1,4 @@
+from pathlib import Path
 import os
 
 # Root directory of the project
@@ -19,8 +20,19 @@ PHASE1_MODEL_PATH = os.path.join(MODEL_DIR,"checkpoints", "sl_final.pth")
 BEST_MODEL_PATH = os.path.join(MODEL_DIR, "best_model.pth")      
 LATEST_MODEL_PATH = os.path.join(MODEL_DIR, "latest_model.pth")  
 
+# --- Generation tracking & model rollback ---
+# Generation starts at 0 and is incremented whenever latest -> best promotion succeeds.
+GENERATION_PATH = os.path.join(MODEL_DIR, "generation.txt")
+
+# Keep up to N archived best models for rollback:
+#   models/model_0.pth, models/model_1.pth, ...
+ARCHIVED_MODELS_KEEP = int(os.environ.get("CHRONOS_ARCHIVED_MODELS_KEEP", "5"))
+
 # RL replay buffer (self-play shards)
 RL_BUFFER_DIR = "E:/chronos/chronos_rl_buffer"
+
+# RL shard numbering persistence (monotonic counter)
+RL_SHARD_COUNTER_PATH = os.path.join(RL_BUFFER_DIR, "rl_shard_counter.txt")
 
 # RL replay buffer size cap (bytes). Default is 250 GB (your stated budget).
 RL_BUFFER_MAX_GB = int(os.environ.get("CHRONOS_RL_BUFFER_MAX_GB", "250"))

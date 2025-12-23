@@ -1,10 +1,7 @@
-import sys, os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-
 import os
 import json
 import time
-from datetime import datetime
+import shutil
 
 import torch
 import chess
@@ -13,9 +10,7 @@ import numpy as np
 from src.config import BEST_MODEL_PATH, LATEST_MODEL_PATH
 from src.nn.network import ChessNet
 from src.mcts.mcts import MCTS
-def log(msg: str):
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[{now}] {msg}")
+from src.common.log import log
 
 
 def play_game(model_white, model_black, device, simulations=200, temp_moves=0, max_moves=512) -> float:
@@ -133,7 +128,11 @@ def evaluate_and_promote(
     if final_score >= threshold:
         promoted = True
         log(f"Latest model wins (>= {threshold:.2f}). Promoting to best.")
-        torch.save(torch.load(LATEST_MODEL_PATH, map_location="cpu"), BEST_MODEL_PATH)
+        try:
+            shutil.copy2(LATEST_MODEL_PATH, BEST_MODEL_PATH)
+        except Exception:
+            # Fallback for cross-device copy edge cases
+            torch.save(torch.load(LATEST_MODEL_PATH, map_location="cpu"), BEST_MODEL_PATH)
     else:
         log(f"Latest model not strong enough. Keeping current best.")
 

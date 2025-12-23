@@ -1,8 +1,3 @@
-import sys
-import os
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any
 from datetime import datetime

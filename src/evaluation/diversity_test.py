@@ -1,5 +1,5 @@
 import os
-from collections import Counter, defaultdict
+from collections import Counter
 import chess.pgn
 from datetime import datetime
 

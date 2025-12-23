@@ -1,8 +1,6 @@
-import os
 import time
 import math
 from dataclasses import dataclass
-from datetime import datetime
 
 import numpy as np
 import torch
@@ -47,10 +45,6 @@ def _play_one_game_vs_stockfish(
         mcts = MCTS(model=model, device=device, simulations=simulations, cpuct=1.5, add_dirichlet_noise=False)
 
         # deterministic play for rating
-        if hasattr(mcts, "temp_moves"):
-            mcts.temp_moves = 0
-        if hasattr(mcts, "temp_initial"):
-            mcts.temp_initial = 1.0
 
         for _ in range(max_moves):
             if board.is_game_over(claim_draw=True):

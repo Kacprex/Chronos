@@ -2,8 +2,7 @@ import os
 import io
 import time
 import random
-from datetime import datetime
-from typing import Optional, List, Tuple
+from typing import Optional, List
 
 import torch
 import numpy as np
@@ -18,9 +17,7 @@ from src.nn.network import ChessNet
 from src.nn.encoding import encode_board
 
 
-def log(msg: str) -> None:
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[{now}] {msg}")
+from src.common.log import log
 
 
 def _cp_to_value(cp: Optional[int], mate: Optional[int]) -> float:

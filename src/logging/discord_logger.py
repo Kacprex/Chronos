@@ -21,8 +21,7 @@ _LAST_SENT_FINGERPRINT: str = ""
 
 
 _IMPORTANT_PATTERNS = [
-    # Phase separators / milestones
-    re.compile(r"^\[[0-9\-: ]+\]\s+---"),
+    # Milestones (avoid sending every loop separator / status line)
     re.compile(r"Promotion eval"),
     re.compile(r"Promoted latest model"),
     re.compile(r"Latest model not strong enough"),

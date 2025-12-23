@@ -91,12 +91,29 @@ Where:
 - `N` is the number of positions in the shard.
 - `MOVE_SPACE` is defined in `src/nn/encoding.py`.
 
-`train_rl.py` supports both this **current** format (`x/pi/z`) and an older naming (`boards/policies/values`) so you can mix buffers without crashes.
+#### RL shard filenames
+
+`RL_Shard_{generation}_{YYYYMMDD}_{HHMMSS}_{loop}_{shard}.pt`
+
+- `generation`: starts at **0**, increments **only on promotion**.
+- `loop`: RL loop index from hub option 8 (`1..num_loops`).
+- `shard`: monotonically increasing counter (`1..∞`).
+
+This makes it easy to sort shards and identify which generation produced them.
+
+#### Backward compatibility
+
+`train_rl.py` supports both this current format (`x/pi/z`) and an older naming (`boards/policies/values`).
 
 ### 4.2 Model checkpoints (`.pth`)
 
 - Stored with `torch.save(model.state_dict(), path)`.
 - The architecture must match `src/nn/model.py`.
+
+
+#### Model history (rollback)
+
+On each successful promotion, Chronos also archives the promoted checkpoint as `models/model_{generation}.pth` and keeps the **last 5** archived generations. This provides a simple rollback mechanism if performance collapses in later generations.
 
 ### 4.3 Resume checkpoint (`rl_resume.pt`)
 
@@ -205,6 +222,9 @@ The RL buffer can grow fast. With the defaults:
 - Prune target: **220 GB**
 
 If you want to free space immediately, you can delete the oldest shard files in `RL_BUFFER_DIR`.
+
+
+**Note on resuming after manual deletes:** if you manually delete shard files, the RL resume checkpoint (`rl_resume.pt`) can reference shard indices that no longer exist. Chronos will ignore/clear the resume state when it detects missing shards so training can continue without getting stuck.
 
 ---
 

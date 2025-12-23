@@ -62,12 +62,26 @@ pip install -r requirements.txt
 
 All default settings live in `src/config.py`.
 
+
+### Model history (rollback)
+
+In addition to `best_model.pth` / `latest_model.pth`, Chronos keeps a small history of promoted best models:
+
+- On every promotion, it saves `models/model_{generation}.pth`
+- It keeps the **last 5** generations and deletes older ones automatically
+
+This gives you a quick rollback path if a later generation collapses.
+
+
 ### Required paths
 
 - `ENGINE_PATH` – path to your Stockfish binary.
 - `MODELS_DIR` – directory containing `best_model.pth` and `latest_model.pth`.
 
 ### RL buffer & disk usage
+
+
+> Note: Shard/buffer locations are intentionally hardcoded to use a specific disk.
 
 Self-play writes shards to `RL_BUFFER_DIR` (default: `E:/chronos/chronos_rl_buffer`).
 
@@ -119,6 +133,21 @@ Self-play saves each shard as a PyTorch `.pt` dict with:
 - `pi`: MCTS move distribution per position, shape `(N, MOVE_SPACE)`
 - `z`: game result from the current player’s perspective, shape `(N, 1)`
 
+### RL shard filenames
+
+Shards are named to be human-readable and sortable:
+
+`RL_Shard_{generation}_{YYYYMMDD}_{HHMMSS}_{loop}_{shard}.pt`
+
+- `generation`: starts at **0** and increments **only when a model is promoted**.
+- `YYYYMMDD` / `HHMMSS`: date/time when the shard was written.
+- `loop`: the **RL loop iteration index** from hub option 8 (`1..num_loops`).
+- `shard`: a monotonically increasing counter (`1..∞`).
+
+> Tip: This makes it easy to tell “which generation produced this data” just from the filename.
+
+### Compatibility
+
 `train_rl.py` supports both the current keys (`x/pi/z`) and an older naming (`boards/policies/values`) if you have older shards.
 
 ---
@@ -140,6 +169,14 @@ Your RL shards were written with the new keys (`x/pi/z`) but your `train_rl.py` 
 Update `src/training/train_rl.py` (this repo version already handles both formats).
 
 ### Self-play workers crash
+
+
+
+### RL resume checkpoint after deleting shards
+
+If you manually delete RL shard files in `RL_BUFFER_DIR`, the resume checkpoint (`rl_resume.pt`) can point to shard indices that no longer exist.
+
+Chronos will **auto-ignore/clear** the RL resume state when it detects that the expected shard set is missing, so training can start from the remaining shards without getting stuck.
 
 - Make sure `best_model.pth` exists where `BEST_MODEL_PATH` points.
 - If you changed the model architecture, ensure the checkpoint matches the code.

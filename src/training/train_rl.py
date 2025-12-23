@@ -1,6 +1,3 @@
-import sys, os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-
 import os
 import time
 from datetime import datetime
@@ -9,7 +6,17 @@ import torch
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
 
-from src.config import RL_BUFFER_DIR, LATEST_MODEL_PATH, BEST_MODEL_PATH
+# AMP API compatibility (torch.amp.* is the modern API; torch.cuda.amp.* is legacy)
+try:
+    from torch.amp import GradScaler as AmpGradScaler
+    from torch.amp import autocast as amp_autocast
+    _AMP_USES_DEVICE_ARG = True
+except Exception:
+    from torch.cuda.amp import GradScaler as AmpGradScaler
+    from torch.cuda.amp import autocast as amp_autocast
+    _AMP_USES_DEVICE_ARG = False
+
+from src.config import RL_BUFFER_DIR, LATEST_MODEL_PATH, BEST_MODEL_PATH, RL_RESUME_PATH
 from src.nn.network import ChessNet
 
 
@@ -29,30 +36,41 @@ WEIGHT_DECAY = 1e-4
 EPOCHS = 1           # loop over RL shards
 TEMPERATURE_PLIES = 10
 INITIAL_TEMPERATURE = 1.25
-CHECKPOINT_PATH = "models/checkpoints/rl_resume.pt"
-
+CHECKPOINT_PATH = RL_RESUME_PATH
 os.makedirs(os.path.dirname(CHECKPOINT_PATH), exist_ok=True)
 
 
-def fmt_time(ts: float) -> str:
-    h = int(ts // 3600)
-    m = int((ts % 3600) // 60)
-    s = int(ts % 60)
-    return f"{h:d}:{m:02d}:{s:02d}"
-
-
-def log(msg: str):
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[{now}] {msg}")
+from src.common.timefmt import fmt_time
+from src.common.log import log
 
 
 def get_rl_shards():
-    files = [
-        os.path.join(RL_BUFFER_DIR, f)
-        for f in os.listdir(RL_BUFFER_DIR)
-        if f.startswith("rl_shard_") and f.endswith(".pt")
-    ]
-    files.sort()
+    files = []
+    for f in os.listdir(RL_BUFFER_DIR):
+        if not (f.endswith(".pt") and (f.startswith("rl_shard_") or f.startswith("RL_Shard_"))):
+            continue
+        files.append(os.path.join(RL_BUFFER_DIR, f))
+
+    def _key(p: str):
+        name = os.path.basename(p)
+        # New style: RL_Shard_{gen}_{YYYYMMDD}_{HHMMSS}_{loop}_{num}.pt
+        if name.startswith("RL_Shard_") and name.endswith(".pt"):
+            stem = name[:-3]
+            parts = stem.split("_")
+            if len(parts) >= 7:
+                try:
+                    gen = int(parts[2])
+                    date = int(parts[3])
+                    t = int(parts[4])
+                    loop = int(parts[5])
+                    num = int(parts[6])
+                    return (gen, date, t, loop, num)
+                except Exception:
+                    pass
+        # Old style: fall back to filename
+        return (10**9, name)
+
+    files.sort(key=_key)
     return files
 
 
@@ -88,7 +106,15 @@ def train_rl():
 
     shards = get_rl_shards()
     if not shards:
-        log("No RL shards found. Run self-play first.")
+        # If the user cleared the buffer, any old resume checkpoint is now invalid.
+        if os.path.exists(CHECKPOINT_PATH):
+            try:
+                os.remove(CHECKPOINT_PATH)
+                log("No RL shards found; cleared stale rl_resume checkpoint.")
+            except Exception:
+                log("No RL shards found; rl_resume checkpoint exists but could not be removed.")
+        else:
+            log("No RL shards found. Run self-play first.")
         return
 
     total_shards = len(shards)
@@ -104,12 +130,24 @@ def train_rl():
         model.load_state_dict(torch.load(BEST_MODEL_PATH, map_location=device))
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
-    scaler = torch.cuda.amp.GradScaler(enabled=(device.type == "cuda"))
+    if _AMP_USES_DEVICE_ARG:
+        scaler = AmpGradScaler("cuda", enabled=(device.type == "cuda"))
+    else:
+        scaler = AmpGradScaler(enabled=(device.type == "cuda"))
 
     loss_policy_fn = torch.nn.KLDivLoss(reduction="batchmean")
     loss_value_fn = torch.nn.MSELoss()
 
     resume_epoch, resume_shard, resume_batch = load_resume_state(model, optimizer, scaler)
+
+    # If shards were deleted/rotated, the resume pointer can fall out of range.
+    if resume_shard >= total_shards or resume_shard < 0:
+        log(f"RL resume points past available shards (resume_shard={resume_shard}, total={total_shards}) -> resetting resume.")
+        resume_epoch, resume_shard, resume_batch = 0, 0, 0
+        try:
+            os.remove(CHECKPOINT_PATH)
+        except Exception:
+            pass
 
     global_start = time.time()
     total_samples = 0
@@ -171,7 +209,11 @@ def train_rl():
 
                 optimizer.zero_grad(set_to_none=True)
 
-                with torch.cuda.amp.autocast(enabled=(device.type == "cuda")):
+                if _AMP_USES_DEVICE_ARG:
+                    ctx = amp_autocast("cuda", enabled=(device.type == "cuda"))
+                else:
+                    ctx = amp_autocast(enabled=(device.type == "cuda"))
+                with ctx:
                     logits, v_pred = model(b)
                     log_probs = torch.log_softmax(logits, dim=1)
                     pi_target_norm = pi_target / (pi_target.sum(dim=1, keepdim=True) + 1e-8)

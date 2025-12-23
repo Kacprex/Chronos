@@ -7,7 +7,18 @@ import chess
 import chess.pgn
 import torch
 
-from src.config import AIVSAI, SFVSAI, ENGINE_PATH, BEST_MODEL_PATH, LATEST_MODEL_PATH, RL_RESUME_PATH, RESET_LATEST_ON_FAILED_PROMOTION
+from src.config import (
+    AIVSAI,
+    SFVSAI,
+    ENGINE_PATH,
+    BEST_MODEL_PATH,
+    LATEST_MODEL_PATH,
+    RL_RESUME_PATH,
+    RESET_LATEST_ON_FAILED_PROMOTION,
+    GENERATION_PATH,
+    ARCHIVED_MODELS_KEEP,
+    MODEL_DIR,
+)
 from src.nn.network import ChessNet
 from src.selfplay.encode_game import GameRecord
 from src.selfplay.self_play_worker import self_play
@@ -16,6 +27,7 @@ from src.evaluation.promotion import evaluate_and_promote
 from src.evaluation.diversity_test import main as run_diversity_test
 from src.evaluation.stockfish_eval import evaluate_model_vs_stockfish
 from src.logging.discord_logger import log_to_discord
+from src.common.generation import read_generation, write_generation
 
 from src.mcts.mcts import MCTS
 
@@ -28,17 +40,67 @@ def log(msg: str):
     log_to_discord(line)
 
 
-def _reset_latest_to_best(reason: str):
-    """Option A: if a candidate doesn't get promoted, snap back to best."""
+def _reset_latest_to_best(*, clear_resume: bool = True, reason: str = "candidate failed promotion"):
+    """If a candidate doesn't get promoted, snap latest back to best."""
     try:
-        if os.path.exists(BEST_MODEL_PATH):
-            shutil.copy2(BEST_MODEL_PATH, LATEST_MODEL_PATH)
-            # The RL resume checkpoint contains optimizer state for the discarded candidate.
-            if os.path.exists(RL_RESUME_PATH):
-                os.remove(RL_RESUME_PATH)
-            log(f"Latest reset to best ({reason}).")
+        if not os.path.exists(BEST_MODEL_PATH):
+            return
+        shutil.copy2(BEST_MODEL_PATH, LATEST_MODEL_PATH)
+        # The RL resume checkpoint contains optimizer state for the discarded candidate.
+        if clear_resume and os.path.exists(RL_RESUME_PATH):
+            os.remove(RL_RESUME_PATH)
+        log(f"Latest reset to best ({reason}).")
     except Exception as e:
         log(f"WARN: failed to reset latest to best: {e}")
+
+
+def _ensure_generation_initialized() -> int:
+    """Ensure generation.txt exists and seed models/model_0.pth if appropriate."""
+    os.makedirs(MODEL_DIR, exist_ok=True)
+
+    gen = read_generation(GENERATION_PATH)
+    if not os.path.exists(GENERATION_PATH):
+        write_generation(GENERATION_PATH, 0)
+        gen = 0
+
+    # Seed rollback archive for generation 0 if best exists and archive missing.
+    try:
+        model0 = os.path.join(MODEL_DIR, "model_0.pth")
+        if os.path.exists(BEST_MODEL_PATH) and not os.path.exists(model0):
+            shutil.copy2(BEST_MODEL_PATH, model0)
+    except Exception:
+        pass
+
+    return int(gen)
+
+
+def _archive_best_model(gen: int) -> None:
+    """Copy current best_model.pth to models/model_{gen}.pth and keep last N."""
+    if not os.path.exists(BEST_MODEL_PATH):
+        return
+
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    dst = os.path.join(MODEL_DIR, f"model_{int(gen)}.pth")
+    try:
+        shutil.copy2(BEST_MODEL_PATH, dst)
+    except Exception as e:
+        log(f"WARN: failed to archive best model to {dst}: {e}")
+        return
+
+    keep = int(max(1, ARCHIVED_MODELS_KEEP))
+    min_keep_gen = int(gen) - (keep - 1)
+    for name in os.listdir(MODEL_DIR):
+        if not (name.startswith("model_") and name.endswith(".pth")):
+            continue
+        stem = name[len("model_") : -len(".pth")]
+        if not stem.isdigit():
+            continue
+        g = int(stem)
+        if g < min_keep_gen:
+            try:
+                os.remove(os.path.join(MODEL_DIR, name))
+            except Exception:
+                pass
 
 
 def _read_int(prompt: str, default: int) -> int:
@@ -216,17 +278,21 @@ def run_rl_loop():
     promo_games = _read_int("Promotion match games", 50) if do_promo else 0
     promo_threshold = _read_float("Promotion threshold (latest winrate)", 0.55) if do_promo else 0.0
 
-    log("=== RL LOOP START ===")
+    gen = _ensure_generation_initialized()
+    log(f"=== RL LOOP START (generation={gen}) ===")
     t0 = time.time()
 
     for it in range(1, iterations + 1):
-        log(f"--- Iteration {it}/{iterations}: self-play ---")
+        log(f"--- Iteration {it}/{iterations}: self-play (gen={gen}) ---")
         self_play(
             num_games=games_per_iter,
             simulations=simulations,
             shard_size=shard_size,
             workers=self_play_workers,
             mcts_batch_size=mcts_batch_size,
+            generation=gen,
+            loop_iteration=it,
+            max_iterations=iterations,
         )
 
         log(f"--- Iteration {it}/{iterations}: train_rl ---")
@@ -234,7 +300,20 @@ def run_rl_loop():
 
         if do_promo:
             log(f"--- Iteration {it}/{iterations}: evaluate & promote ---")
-            promo = evaluate_and_promote(num_games=promo_games, threshold=promo_threshold)
+            promo = evaluate_and_promote(
+                num_games=promo_games,
+                threshold=promo_threshold,
+                simulations=simulations,
+                loop_iteration=it,
+                max_iterations=iterations,
+                selfplay_sims=simulations,
+            )
+
+            if promo.get("promoted", False):
+                gen += 1
+                write_generation(GENERATION_PATH, gen)
+                _archive_best_model(gen)
+                log(f"Promotion succeeded -> generation is now {gen}")
 
             # Option A: if the candidate fails promotion, reset latest back to best
             # and clear the RL resume checkpoint so training starts clean next iter.
@@ -263,6 +342,7 @@ def main_menu():
         choice = input("Select option: ").strip()
 
         if choice == "1":
+            gen = _ensure_generation_initialized()
             games = _read_int("Self-play games", 50)
             sims = _read_int("Simulations", 200)
             shard_size = _read_int("RL shard size (positions)", 10_000)
@@ -274,10 +354,14 @@ def main_menu():
                 shard_size=shard_size,
                 workers=workers,
                 mcts_batch_size=mcts_batch,
+                generation=gen,
+                loop_iteration=1,
+                max_iterations=1,
             )
             train_rl()
 
         elif choice == "2":
+            gen = _ensure_generation_initialized()
             games = _read_int("Self-play games", 50)
             sims = _read_int("Simulations", 200)
             shard_size = _read_int("RL shard size (positions)", 10_000)
@@ -289,6 +373,9 @@ def main_menu():
                 shard_size=shard_size,
                 workers=workers,
                 mcts_batch_size=mcts_batch,
+                generation=gen,
+                loop_iteration=0,
+                max_iterations=0,
             )
 
         elif choice == "3":
@@ -309,9 +396,15 @@ def main_menu():
             evaluate_model_vs_stockfish(num_positions=npos, sf_depth=sf_depth)
 
         elif choice == "7":
+            gen = _ensure_generation_initialized()
             games = _read_int("Promotion games", 50)
             thr = _read_float("Winrate threshold", 0.55)
-            evaluate_and_promote(num_games=games, threshold=thr)
+            promo = evaluate_and_promote(num_games=games, threshold=thr, loop_iteration=1, max_iterations=1)
+            if promo.get("promoted", False):
+                gen += 1
+                write_generation(GENERATION_PATH, gen)
+                _archive_best_model(gen)
+                log(f"Promotion succeeded -> generation is now {gen}")
 
         elif choice == "8":
             run_rl_loop()

@@ -1,6 +1,5 @@
 import os
 import multiprocessing as mp
-from math import ceil
 import time
 from datetime import datetime
 from typing import List, Tuple
@@ -9,39 +8,69 @@ import chess
 import numpy as np
 import torch
 
-from src.config import BEST_MODEL_PATH, RL_BUFFER_DIR, RL_BUFFER_MAX_BYTES
+from src.config import BEST_MODEL_PATH, RL_BUFFER_DIR, RL_BUFFER_MAX_BYTES, RL_SHARD_COUNTER_PATH
 from src.mcts.mcts import MCTS
 from src.inference.batched_inference import BatchedInferenceServer, BatchedInferenceClient
 from src.nn.encoding import MOVE_SPACE, encode_board, move_to_index
 from src.nn.network import ChessNet
 
 
-def _fmt_time(seconds: float) -> str:
-    seconds = max(0.0, float(seconds))
-    h = int(seconds // 3600)
-    m = int((seconds % 3600) // 60)
-    s = int(seconds % 60)
-    return f"{h}:{m:02d}:{s:02d}"
+from src.common.timefmt import fmt_time as _fmt_time
+from src.common.log import log as _log
 
 
-def _log(msg: str) -> None:
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[{now}] {msg}")
-
-
-def _discover_next_shard_id(rl_dir: str) -> int:
-    """Return next shard id based on existing rl_shard_XXXXXX.pt files."""
+def _counter_path(out_dir: str) -> str:
+    """Return path to the persistent shard counter for a given output directory."""
     try:
-        max_id = -1
-        for name in os.listdir(rl_dir):
-            if not name.startswith("rl_shard_") or not name.endswith(".pt"):
+        if os.path.abspath(out_dir) == os.path.abspath(RL_BUFFER_DIR):
+            return RL_SHARD_COUNTER_PATH
+    except Exception:
+        pass
+    return os.path.join(out_dir, "rl_shard_counter.txt")
+
+
+def _load_next_shard_number(out_dir: str) -> int:
+    """Get the next shard number (1..inf), persisted across runs."""
+    os.makedirs(out_dir, exist_ok=True)
+    path = _counter_path(out_dir)
+
+    # 1) Prefer the persisted counter file.
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            s = f.read().strip()
+        n = int(s)
+        if n >= 1:
+            return n
+    except Exception:
+        pass
+
+    # 2) Fallback: scan existing new-style shard names for max index.
+    max_seen = 0
+    try:
+        for name in os.listdir(out_dir):
+            if not (name.startswith("RL_Shard_") and name.endswith(".pt")):
                 continue
-            stem = name[len("rl_shard_") : -len(".pt")]
-            if stem.isdigit():
-                max_id = max(max_id, int(stem))
-        return max_id + 1
-    except FileNotFoundError:
-        return 0
+            stem = name[:-3]  # remove .pt
+            parts = stem.split("_")
+            if len(parts) < 6:
+                continue
+            last = parts[-1]
+            if last.isdigit():
+                max_seen = max(max_seen, int(last))
+    except Exception:
+        pass
+
+    return max_seen + 1 if max_seen > 0 else 1
+
+
+def _write_next_shard_number(out_dir: str, next_n: int) -> None:
+    """Persist the next shard number."""
+    path = _counter_path(out_dir)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(str(int(next_n)))
+    os.replace(tmp, path)
 
 
 def _enforce_rl_buffer_limit(rl_dir: str, max_bytes: int) -> None:
@@ -53,7 +82,7 @@ def _enforce_rl_buffer_limit(rl_dir: str, max_bytes: int) -> None:
         entries = []
         total = 0
         for name in os.listdir(rl_dir):
-            if not (name.startswith("rl_shard_") and name.endswith(".pt")):
+            if not (name.endswith(".pt") and (name.startswith("rl_shard_") or name.startswith("RL_Shard_"))):
                 continue
             path = os.path.join(rl_dir, name)
             try:
@@ -86,7 +115,9 @@ def _enforce_rl_buffer_limit(rl_dir: str, max_bytes: int) -> None:
 def _save_shard(
     out_dir: str,
     samples: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
-    shard_id: int | None = None,
+    generation: int,
+    loop_iteration: int,
+    shard_number: int,
 ) -> str:
     """Persist one RL shard to disk.
 
@@ -94,18 +125,22 @@ def _save_shard(
     global `RL_BUFFER_DIR`) because self-play workers run in separate processes
     and we want the call-sites to be unambiguous.
     """
-    import secrets
-
     os.makedirs(out_dir, exist_ok=True)
-    if shard_id is None:
-        # Avoid cross-process collisions without requiring shared state.
-        shard_id = (time.time_ns() << 16) | secrets.randbits(16)
+    dt = datetime.now()
+    date_str = dt.strftime("%Y%m%d")
+    time_str = dt.strftime("%H%M%S")
 
-    out_path = os.path.join(out_dir, f"rl_shard_{shard_id}.pt")
+    out_path = os.path.join(
+        out_dir,
+        f"RL_Shard_{int(generation)}_{date_str}_{time_str}_{int(loop_iteration)}_{int(shard_number)}.pt",
+    )
     payload = {
         "x": torch.stack([s[0] for s in samples]),
         "pi": torch.stack([s[1] for s in samples]),
         "z": torch.stack([s[2] for s in samples]),
+        "generation": int(generation),
+        "loop_iteration": int(loop_iteration),
+        "created_local": dt.isoformat(timespec="seconds"),
     }
     torch.save(payload, out_path)
     # Keep disk usage bounded (...)
@@ -113,11 +148,11 @@ def _save_shard(
     return out_path
 
 
-def _take_shard_id(counter: "mp.Value", lock: "mp.Lock") -> int:
+def _take_shard_number(counter: "mp.Value", lock: "mp.Lock") -> int:
     with lock:
-        sid = int(counter.value)
-        counter.value = sid + 1
-        return sid
+        n = int(counter.value)
+        counter.value = n + 1
+        return n
 
 
 def _selfplay_worker_process(
@@ -133,6 +168,8 @@ def _selfplay_worker_process(
     shard_counter: "mp.Value",
     shard_lock: "mp.Lock",
     games_done: "mp.Value",
+    generation: int,
+    loop_iteration: int,
 ):
     """Worker process that generates self-play games and writes shards directly to disk."""
     # Limit intra-op thread parallelism per process to avoid CPU oversubscription.
@@ -165,16 +202,16 @@ def _selfplay_worker_process(
         while len(buffer) >= shard_size:
             shard_samples = buffer[:shard_size]
             buffer = buffer[shard_size:]
-            sid = _take_shard_id(shard_counter, shard_lock)
-            _save_shard(RL_BUFFER_DIR, shard_samples, sid)
+            sn = _take_shard_number(shard_counter, shard_lock)
+            _save_shard(RL_BUFFER_DIR, shard_samples, generation, loop_iteration, sn)
 
         with games_done.get_lock():
             games_done.value += 1
 
     # Flush remainder
     if buffer:
-        sid = _take_shard_id(shard_counter, shard_lock)
-        _save_shard(RL_BUFFER_DIR, buffer, sid)
+        sn = _take_shard_number(shard_counter, shard_lock)
+        _save_shard(RL_BUFFER_DIR, buffer, generation, loop_iteration, sn)
 
 
 def _safe_probs(probs: np.ndarray) -> np.ndarray:
@@ -296,6 +333,10 @@ def _batched_selfplay_worker(
     max_moves: int,
     mcts_batch_size: int,
     games_counter,
+    shard_counter,
+    shard_lock,
+    generation: int,
+    loop_iteration: int,
 ):
     """Top-level entrypoint for spawn-based multiprocessing (Windows safe)."""
     torch.set_num_threads(1)
@@ -319,13 +360,15 @@ def _batched_selfplay_worker(
         while len(buffer) >= int(shard_size):
             shard = buffer[:int(shard_size)]
             buffer = buffer[int(shard_size):]
-            _save_shard(out_dir, shard)
+            sn = _take_shard_number(shard_counter, shard_lock)
+            _save_shard(out_dir, shard, generation, loop_iteration, sn)
 
         with games_counter.get_lock():
             games_counter.value += 1
 
     if buffer:
-        _save_shard(out_dir, buffer)
+        sn = _take_shard_number(shard_counter, shard_lock)
+        _save_shard(out_dir, buffer, generation, loop_iteration, sn)
 
 def self_play(
     num_games: int,
@@ -339,6 +382,9 @@ def self_play(
     mcts_batch_size: int = 32,
     infer_max_batch: int = 128,
     infer_wait_ms: int = 2,
+    generation: int = 0,
+    loop_iteration: int = 0,
+    max_iterations: int = 0,
 ):
     """
     Multi-worker self-play.
@@ -346,9 +392,14 @@ def self_play(
     - If workers == 1: runs in-process, directly calling the model on GPU/CPU.
     - If workers > 1 and CUDA is available: spins up a single GPU inference server that
       batches requests across all workers, while workers run MCTS + game logic on CPU.
-    - Each worker writes shards to out_dir; filenames are unique (pid+timestamp).
+    - Writes RL shards named:
+        RL_Shard_{generation}_{YYYYMMDD}_{HHMMSS}_{loop_iteration}_{shard_number}.pt
     """
     os.makedirs(out_dir, exist_ok=True)
+
+    # Shard numbering is monotonic (1..inf) and persisted to a counter file.
+    # For multiprocessing, we share a single counter across workers.
+    next_shard = _load_next_shard_number(out_dir)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model_path = str(BEST_MODEL_PATH)
@@ -366,6 +417,8 @@ def self_play(
         model.load_state_dict(ckpt)
         model.to(device)
         model.eval()
+
+        next_sn = int(next_shard)
 
         games_done = 0
         buffer = []
@@ -387,14 +440,20 @@ def self_play(
             while len(buffer) >= int(shard_size):
                 shard = buffer[:int(shard_size)]
                 buffer = buffer[int(shard_size):]
-                _save_shard(out_dir, shard)
+                sn = next_sn
+                next_sn += 1
+                _save_shard(out_dir, shard, generation, loop_iteration, sn)
 
             if games_done % 10 == 0 or games_done == num_games:
                 dt = time.time() - t0
                 print(f"[Self-play] {games_done}/{num_games} games | {dt:.1f}s elapsed", flush=True)
 
         if buffer:
-            _save_shard(out_dir, buffer)
+            sn = next_sn
+            next_sn += 1
+            _save_shard(out_dir, buffer, generation, loop_iteration, sn)
+
+        _write_next_shard_number(out_dir, next_sn)
 
         return
 
@@ -416,6 +475,8 @@ def self_play(
     server.start()
 
     games_counter = ctx.Value("i", 0)
+    shard_counter = ctx.Value("i", int(next_shard))
+    shard_lock = ctx.Lock()
 
     # Distribute games across workers
     per = int(num_games) // workers
@@ -436,6 +497,10 @@ def self_play(
                 int(temperature_moves), float(initial_temperature),
                 int(max_moves), int(mcts_batch_size),
                 games_counter,
+                shard_counter,
+                shard_lock,
+                int(generation),
+                int(loop_iteration),
             ),
             daemon=False,
         )
@@ -477,3 +542,11 @@ def self_play(
     except Exception:
         pass
     server.join(timeout=5)
+
+    # Persist next shard number for subsequent runs.
+    try:
+        _write_next_shard_number(out_dir, int(shard_counter.value))
+    except Exception:
+        pass
+
+    return
