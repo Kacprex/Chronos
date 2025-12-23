@@ -11,6 +11,7 @@ venv/
 datasets/
 models/
 checkpoints/
+debug/
 *.pt
 *.pth
 *.h5
