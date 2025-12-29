@@ -1,36 +1,25 @@
-# --- Python ---
+# Build
+build/
+**/build/
+**/cmake-build-*/
+
+# Python
 __pycache__/
 *.pyc
-test.py
-# --- Virtual env ---
+.venv/
 venv/
-.env/
 
-# --- ML / AI ---
-/data/
-datasets/
-models/
-checkpoints/
-debug/
+# Data / runs
+data/
+*.onnx
 *.pt
 *.pth
-*.h5
-*.onnx
-*.npy
-!/src/data/
-# --- Chess / engines ---
-rust_pgn/
-engine/
+*.bin
+*.npz
 
-# --- Logs ---
-logs/
-*.log
-
-# --- OS ---
-.DS_Store
-Thumbs.db
-
-#--- ZIP ---
-zip/
-latest_working.zip
-latest.zip
+# IDE
+.vscode/
+.idea/
+*.user
+*.suo
+*.VC.db

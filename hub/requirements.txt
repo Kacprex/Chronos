@@ -1,0 +1,4 @@
+streamlit>=1.35
+pyyaml>=6.0
+pandas>=2.1
+requests>=2.31

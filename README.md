@@ -1,189 +1,89 @@
-# Chronos
+# Chronos (Phases 0–1)
 
-Chronos is an AlphaZero-style chess project:
+This zip contains **Phase 0 (project skeleton + config/logging conventions)**, **Phase 1 (a working C++ UCI chess engine MVP)**, **Phase 2 (eval breakdown logging)**, **Phase 3 (neural inference hook stub / optional ONNX)**, **Phase 4 (hybrid arbitration logic)** and **Phase 5 (GM pretraining scaffold)**.
 
-- **Self-play** generates training data using **MCTS + a neural network**.
-- **RL training** learns from those self-play positions (**policy + value heads**).
-- **Promotion** evaluates `latest_model.pth` vs `best_model.pth` and promotes if the winrate clears a threshold.
+## What you get (Phase 0)
+- Clean repo layout (engine / nn / hub / notifier / tools / scripts / configs / tests / docs)
+- Central config in `configs/engine.yaml`
+- A single source of truth for storage paths:
+  - **All shards are intended to live under `E:/chronos`** (configurable but defaulted accordingly)
 
-The main entrypoint is **`hub.py`** (interactive menu).
+## What you get (Phase 1)
+- `chronos_engine` (C++17) with:
+  - Legal move generation (incl. castling + en passant + promotions)
+  - Make/unmake with undo stack
+  - Alpha-beta search + quiescence (captures)
+  - Transposition table
+  - Basic evaluation (material + PST)
+  - UCI interface (`uci`, `isready`, `position`, `go`, `stop`, `quit`)
 
----
-
-## Project layout
-
-```
-chronos/
-  hub.py
-  README.md
-  docs/
-    PROJECT_LIBRARY.md
-  src/
-    config.py
-    evaluation/
-      promotion.py
-    logging/
-      discord_webhooks.py
-    mcts/
-      mcts.py
-      node.py
-    nn/
-      encoding.py
-      model.py
-    selfplay/
-      self_play_worker.py
-    training/
-      train_rl.py
-```
+> This is an MVP meant to be correct and hackable. Performance is good enough for iteration and later optimization.
 
 ---
 
-## Installation (Windows + PowerShell)
+## Build (Windows / Visual Studio 2022)
 
-Create a virtual environment and install dependencies:
+### Option A: CMake + Visual Studio generator
+From the repo root:
 
 ```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
+mkdir build
+cmake -S engine -B build -G "Visual Studio 17 2022" -A x64
+cmake --build build --config Release
 ```
 
-1) **Install PyTorch** (CPU or CUDA) using the command generated on the PyTorch website.
+The executable will be in:
+`build/Release/chronos_engine.exe`
 
-2) Install the remaining packages:
-
+### Option B: CMake + Ninja (recommended if you have Ninja)
 ```powershell
-pip install -r requirements.txt
+cmake -S engine -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build
 ```
 
 ---
 
-## Configuration
+## Quick UCI test
+Run `chronos_engine.exe` and type:
 
-All default settings live in `src/config.py`.
-
-
-### Model history (rollback)
-
-In addition to `best_model.pth` / `latest_model.pth`, Chronos keeps a small history of promoted best models:
-
-- On every promotion, it saves `models/model_{generation}.pth`
-- It keeps the **last 5** generations and deletes older ones automatically
-
-This gives you a quick rollback path if a later generation collapses.
-
-
-### Required paths
-
-- `ENGINE_PATH` – path to your Stockfish binary.
-- `MODELS_DIR` – directory containing `best_model.pth` and `latest_model.pth`.
-
-### RL buffer & disk usage
-
-
-> Note: Shard/buffer locations are intentionally hardcoded to use a specific disk.
-
-Self-play writes shards to `RL_BUFFER_DIR` (default: `E:/chronos/chronos_rl_buffer`).
-
-The buffer is auto-pruned when it gets too large:
-
-- `RL_BUFFER_MAX_GB` (default **250**) – hard cap.
-- `RL_BUFFER_PRUNE_KEEP_GB` (default **220**) – after pruning, keep roughly this much.
-
-This matches the assumption that you have **~250 GB** of storage to spare for RL data.
-
-### Discord notifications (promotion)
-
-Promotion results can be posted to Discord.
-
-Set the webhook either by editing `DISCORD_PROMOTION_WEBHOOK` in `src/config.py` **or** by setting an environment variable:
-
-```powershell
-$env:CHRONOS_PROMOTION_WEBHOOK = "<your webhook url>"
+```
+uci
+isready
+position startpos
+go depth 5
 ```
 
-If you get `HTTP Error 403: Forbidden`, the webhook URL/token is invalid or has been revoked—create a new webhook and update it.
+---
+
+## Storage paths (IMPORTANT)
+Default storage root is **`E:/chronos`** via `configs/engine.yaml`.
+
+Nothing in Phase 0–1 generates shards yet, but the path conventions and helpers are already in place:
+- `E:/chronos/shards/sl/...`
+- `E:/chronos/shards/rl/...`
 
 ---
 
-## Running
+## Next split (later)
+When you proceed, you can split into:
+- `sl/` (supervised learning / GM pretrain)
+- `rl/` (self-play + shard selection + promotion)
 
-```powershell
-python hub.py
-```
-
-Recommended flow:
-
-- **Option 8: Run RL loop** (self-play → train_rl → promote)
-
-The RL loop asks for:
-- self-play games per iteration
-- number of self-play worker processes
-- MCTS simulations per move
-- RL shard size (positions)
-- promotion match games + threshold
-
----
-
-## RL shard format (important)
-
-Self-play saves each shard as a PyTorch `.pt` dict with:
-
-- `x`: board tensor, shape `(N, 18, 8, 8)`
-- `pi`: MCTS move distribution per position, shape `(N, MOVE_SPACE)`
-- `z`: game result from the current player’s perspective, shape `(N, 1)`
-
-### RL shard filenames
-
-Shards are named to be human-readable and sortable:
-
-`RL_Shard_{generation}_{YYYYMMDD}_{HHMMSS}_{loop}_{shard}.pt`
-
-- `generation`: starts at **0** and increments **only when a model is promoted**.
-- `YYYYMMDD` / `HHMMSS`: date/time when the shard was written.
-- `loop`: the **RL loop iteration index** from hub option 8 (`1..num_loops`).
-- `shard`: a monotonically increasing counter (`1..∞`).
-
-> Tip: This makes it easy to tell “which generation produced this data” just from the filename.
-
-### Compatibility
-
-`train_rl.py` supports both the current keys (`x/pi/z`) and an older naming (`boards/policies/values`) if you have older shards.
-
----
-
-## Known limitations
-
-- **Promotion move indexing collision:** promotions are currently indexed without encoding the `to_square`, so different promotion moves from the same `from_square` can collide. This can make `index_to_move` ambiguous for promotions.
-- **En passant** is not encoded.
-
-(These are documented in more detail in `docs/PROJECT_LIBRARY.md`.)
-
----
-
-## Troubleshooting
-
-### `KeyError: 'boards'` during RL training
-
-Your RL shards were written with the new keys (`x/pi/z`) but your `train_rl.py` expected `boards/policies/values`.
-Update `src/training/train_rl.py` (this repo version already handles both formats).
-
-### Self-play workers crash
+and keep all shards under `E:/chronos/shards`.
 
 
 
-### RL resume checkpoint after deleting shards
+## Phases 6–7 (added)
+- **Phase 6:** optional ONNX Runtime inference in the C++ engine.
+- **Phase 7:** upgraded Streamlit Hub + optional Discord webhook watcher.
 
-If you manually delete RL shard files in `RL_BUFFER_DIR`, the resume checkpoint (`rl_resume.pt`) can point to shard indices that no longer exist.
 
-Chronos will **auto-ignore/clear** the RL resume state when it detects that the expected shard set is missing, so training can start from the remaining shards without getting stuck.
+## Phase 7 (RL training loop)
+See `docs/phase_7_rl.md` and the `rl/` package for selfplay → Stockfish labeling → training → promotion.
 
-- Make sure `best_model.pth` exists where `BEST_MODEL_PATH` points.
-- If you changed the model architecture, ensure the checkpoint matches the code.
 
-### Discord webhook errors
-
-- `403 Forbidden`: invalid / revoked webhook token, regenerate.
-- `404 Not Found`: wrong webhook URL.
-- Corporate proxies/firewalls can also block webhook posts.
-
+## Phases 8–10
+- **Phase 8:** AlphaZero-style move indexing (4672) + policy head + ONNX export `[4+4672]`.
+- **Phase 9:** MCTS selfplay scaffold producing visit-count policies.
+- **Phase 10:** Engine hybrid selection uses policy priors for style bias.
+See `docs/phases_8_10.md`.

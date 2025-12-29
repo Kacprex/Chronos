@@ -1,7 +1,0 @@
-# Core runtime dependencies (install PyTorch separately; see README.md)
-
-numpy>=1.24
-python-chess>=1.999
-
-tqdm>=4.66
-pandas

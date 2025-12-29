@@ -1,0 +1,6 @@
+python-chess>=1.999
+numpy>=1.26
+tqdm>=4.66
+torch>=2.2
+requests>=2.31
+pandas>=2.1
