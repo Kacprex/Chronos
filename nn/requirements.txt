@@ -1,6 +1,0 @@
-numpy>=1.26
-pyyaml>=6.0
-tqdm>=4.66
-python-chess>=1.999
-torch>=2.2
-onnx>=1.16

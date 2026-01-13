@@ -1,0 +1,6 @@
+# Phase 1 training & dashboards
+numpy
+tqdm
+torch
+streamlit
+psutil

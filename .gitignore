@@ -1,25 +1,7 @@
-# Build
-build/
-**/build/
-**/cmake-build-*/
-
-# Python
-__pycache__/
-*.pyc
-.venv/
-venv/
-
-# Data / runs
-data/
-*.onnx
-*.pt
-*.pth
+/build/
+/.venv/
+/__pycache__/
+/*.zip
 *.bin
-*.npz
-
-# IDE
-.vscode/
-.idea/
-*.user
-*.suo
-*.VC.db
+*.gz
+*.log
